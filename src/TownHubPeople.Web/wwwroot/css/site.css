@@ -2997,3 +2997,24 @@ span.flatpickr-weekday {
 .swal2-container .select2-container {
     z-index: 2000;
 }
+
+/* Dark mode — the popup form sits on a dark Swal surface, so pin its fields and the
+   validation bar to the app's dark tokens rather than relying on inheritance. */
+[data-theme="dark"] .swal2-validation-message {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .swal-form-container .form-control,
+[data-theme="dark"] .swal-form-container .form-select,
+[data-theme="dark"] .swal-form-container .input-group-text,
+[data-theme="dark"] .swal-form-container textarea {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .swal-form-container .form-text,
+[data-theme="dark"] .swal-form-container .form-check-label {
+    color: var(--text-secondary);
+}

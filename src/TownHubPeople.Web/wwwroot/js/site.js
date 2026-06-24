@@ -572,6 +572,7 @@ function openFormModal(o) {
         html: '<div class="swal-form-loading"><span class="spinner-border spinner-border-sm text-primary"></span> Loading…</div>',
         width: o.width || 760,
         confirmButtonText: '<i class="fas fa-save me-1"></i>Save',
+        confirmButtonColor: '#2563eb',
         showDenyButton: true,
         denyButtonText: 'Cancel',
         denyButtonColor: '#6c757d',
