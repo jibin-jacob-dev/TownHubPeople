@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TownHubPeople.Application/TownHubPeople.Application.csproj" />
+    <Project Path="src/TownHubPeople.Domain/TownHubPeople.Domain.csproj" />
+    <Project Path="src/TownHubPeople.Infrastructure/TownHubPeople.Infrastructure.csproj" />
+    <Project Path="src/TownHubPeople.Web/TownHubPeople.Web.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,181 @@
+@model TownHubPeople.Application.Admin.AuditTrail.AuditTrailDetailDto
+@{
+    ViewData["Title"] = "Audit Trail Details";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
+
+<erp-page-header module="Administration" item="Audit Trail" action="Entry #@Model.Id">
+    <a href="/Admin/AuditTrail" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back to Audit Trail
+    </a>
+</erp-page-header>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0">Entry Details</h6></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label text-muted">User</label>
+                        <div class="fw-semibold">@Model.UserName</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label text-muted">Entity</label>
+                        <div class="fw-semibold">@Model.EntityName</div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label text-muted">Entity ID</label>
+                        <div class="fw-semibold">@Model.EntityId</div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label text-muted">Action</label>
+                        <div>
+                            @{
+                                var badge = Model.Action == "Created" ? "success" : Model.Action == "Modified" ? "primary" : "danger";
+                            }
+                            <span class="badge bg-@badge">@Model.Action</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label text-muted">Timestamp</label>
+                        <div class="fw-semibold">@Model.Timestamp.ToString("g")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.AffectedColumns.Count > 0)
+        {
+            <div class="card">
+                <div class="card-header"><h6 class="mb-0">Changes</h6></div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Old Value</th>
+                                <th>New Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var column in Model.AffectedColumns)
+                            {
+                                Model.OldValues.TryGetValue(column, out var oldVal);
+                                Model.NewValues.TryGetValue(column, out var newVal);
+                                <tr>
+                                    <td class="fw-semibold">@column</td>
+                                    <td>
+                                        @if (oldVal != null)
+                                        {
+                                            <span class="text-danger">@oldVal</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (newVal != null)
+                                        {
+                                            <span class="text-success">@newVal</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else if (Model.Action == "Created" && Model.NewValues.Count > 0)
+        {
+            <div class="card">
+                <div class="card-header"><h6 class="mb-0">Created Values</h6></div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var kvp in Model.NewValues)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@kvp.Key</td>
+                                    <td>@(kvp.Value ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else if (Model.Action == "Deleted" && Model.OldValues.Count > 0)
+        {
+            <div class="card">
+                <div class="card-header"><h6 class="mb-0">Deleted Values</h6></div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var kvp in Model.OldValues)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@kvp.Key</td>
+                                    <td>@(kvp.Value ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card info-panel">
+            <div class="card-body">
+                <h6 class="info-panel-heading"><i class="fas fa-info-circle me-2"></i>Audit Info</h6>
+                <div class="info-panel-item">
+                    <i class="fas fa-user text-primary"></i>
+                    <div>
+                        <strong>User ID</strong>
+                        <p>@Model.UserId</p>
+                    </div>
+                </div>
+                <div class="info-panel-divider"></div>
+                <div class="info-panel-item">
+                    <i class="fas fa-database text-info"></i>
+                    <div>
+                        <strong>@Model.EntityName #@Model.EntityId</strong>
+                        <p>@Model.Action at @Model.Timestamp.ToString("f")</p>
+                    </div>
+                </div>
+                @if (Model.AffectedColumns.Count > 0)
+                {
+                    <div class="info-panel-divider"></div>
+                    <div class="info-panel-item">
+                        <i class="fas fa-columns text-warning"></i>
+                        <div>
+                            <strong>@Model.AffectedColumns.Count Column@(Model.AffectedColumns.Count != 1 ? "s" : "") Changed</strong>
+                            <p>@string.Join(", ", Model.AffectedColumns)</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

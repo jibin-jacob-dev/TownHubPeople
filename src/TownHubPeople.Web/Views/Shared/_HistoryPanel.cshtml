@@ -1,0 +1,158 @@
+@model (string EntityName, string EntityId)
+@{
+    var panelId = $"historyPanel_{Model.EntityName}_{Model.EntityId}";
+    var collapseId = $"historyCollapse_{Model.EntityName}_{Model.EntityId}";
+}
+
+<div class="mt-4 history-panel-card" id="@panelId"
+     data-entity-name="@Model.EntityName"
+     data-entity-id="@Model.EntityId">
+    <button class="history-panel-toggle collapsed"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#@collapseId"
+            aria-expanded="false"
+            aria-controls="@collapseId">
+        <i class="fas fa-clock-rotate-left text-muted"></i>
+        <span>History</span>
+        <span class="history-count-badge">—</span>
+        <i class="fas fa-chevron-down history-chevron"></i>
+    </button>
+    <div class="collapse" id="@collapseId">
+        <div class="history-entries-container">
+            <div class="history-loading">
+                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                <span>Loading history…</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var panel = document.getElementById('@panelId');
+    if (!panel) return;
+
+    var collapseEl = document.getElementById('@collapseId');
+    var container  = panel.querySelector('.history-entries-container');
+    var countBadge = panel.querySelector('.history-count-badge');
+    var loaded     = false;
+
+    collapseEl.addEventListener('show.bs.collapse', function () {
+        if (loaded) return;
+        loaded = true;
+
+        var entityName = panel.dataset.entityName;
+        var entityId   = panel.dataset.entityId;
+
+        $.getJSON('/History/EntityHistory', { entityName: entityName, entityId: entityId })
+            .done(function (data) {
+                countBadge.textContent = data.length;
+                if (data.length === 0) {
+                    container.innerHTML =
+                        '<div class="history-empty-state">' +
+                        '<i class="fas fa-clock fa-lg"></i>' +
+                        '<span>No history recorded yet</span>' +
+                        '</div>';
+                    return;
+                }
+                container.innerHTML = renderEntries(data);
+            })
+            .fail(function () {
+                container.innerHTML =
+                    '<div class="history-empty-state">' +
+                    '<i class="fas fa-exclamation-circle text-danger"></i>' +
+                    '<span>Failed to load history</span>' +
+                    '</div>';
+            });
+    });
+
+    function actionClass(action) {
+        if (action === 'Created')  return 'history-action-created';
+        if (action === 'Deleted')  return 'history-action-deleted';
+        return 'history-action-modified';
+    }
+
+    function escHtml(str) {
+        if (str == null) return '<span class="text-muted">—</span>';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function formatDate(iso) {
+        var d = new Date(iso);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
+               ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderChangesTable(entry) {
+        var action     = entry.action;
+        var oldVals    = entry.oldValues    || {};
+        var newVals    = entry.newValues    || {};
+        var affected   = entry.affectedColumns || [];
+
+        var keys = action === 'Created' ? Object.keys(newVals)
+                 : action === 'Deleted' ? Object.keys(oldVals)
+                 : affected.length > 0  ? affected
+                 : Object.keys(newVals).length > 0 ? Object.keys(newVals) : Object.keys(oldVals);
+
+        if (keys.length === 0) return '<p class="text-muted small mb-0 mt-2">No field details recorded.</p>';
+
+        var html = '<table class="history-changes-table"><thead><tr>' +
+                   '<th>Field</th>';
+
+        if (action === 'Modified') {
+            html += '<th>Old Value</th><th>New Value</th>';
+        } else {
+            html += '<th>Value</th>';
+        }
+        html += '</tr></thead><tbody>';
+
+        keys.forEach(function (key) {
+            html += '<tr><td><code class="small">' + escHtml(key) + '</code></td>';
+            if (action === 'Modified') {
+                html += '<td><span class="history-old-value">' + escHtml(oldVals[key]) + '</span></td>' +
+                        '<td><span class="history-new-value">' + escHtml(newVals[key]) + '</span></td>';
+            } else if (action === 'Created') {
+                html += '<td>' + escHtml(newVals[key]) + '</td>';
+            } else {
+                html += '<td><span class="history-old-value">' + escHtml(oldVals[key]) + '</span></td>';
+            }
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function renderEntries(data) {
+        var html = '';
+        data.forEach(function (entry, i) {
+            var entryCollapseId = '@panelId' + '_entry_' + i;
+            var fieldCount = (entry.affectedColumns && entry.affectedColumns.length > 0)
+                ? entry.affectedColumns.length
+                : Math.max(Object.keys(entry.newValues || {}).length, Object.keys(entry.oldValues || {}).length);
+
+            html +=
+                '<div class="history-entry-item">' +
+                  '<button class="history-entry-header collapsed" type="button"' +
+                  '  data-bs-toggle="collapse" data-bs-target="#' + entryCollapseId + '"' +
+                  '  aria-expanded="false" aria-controls="' + entryCollapseId + '">' +
+                  '  <span class="history-action-badge ' + actionClass(entry.action) + '">' + escHtml(entry.action) + '</span>' +
+                  '  <span class="history-meta">' + escHtml(entry.userName) + '</span>' +
+                  '  <span class="history-time">' + formatDate(entry.timestamp) + '</span>' +
+                  (fieldCount > 0 ? '  <span class="history-fields-pill">' + fieldCount + ' field' + (fieldCount !== 1 ? 's' : '') + '</span>' : '') +
+                  '  <i class="fas fa-chevron-down history-chevron-sm"></i>' +
+                  '</button>' +
+                  '<div class="collapse" id="' + entryCollapseId + '">' +
+                  '  <div class="history-entry-body">' + renderChangesTable(entry) + '</div>' +
+                  '</div>' +
+                '</div>';
+        });
+        return html;
+    }
+})();
+</script>

@@ -1,0 +1,179 @@
+@model TownHubPeople.Web.ViewModels.Account.ProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    var initials = string.Concat(Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpper(w[0])));
+}
+
+<erp-page-header module="My Profile" />
+
+<div class="row g-4">
+    <div class="col-lg-8">
+
+        <!-- Profile Hero -->
+        <div class="card mb-4">
+            <div class="card-body d-flex align-items-center gap-4 py-4">
+                <div class="profile-avatar-wrap flex-shrink-0">
+                    @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                    {
+                        <img src="@Model.ProfileImageUrl" alt="@Model.FullName" class="profile-avatar-img" />
+                    }
+                    else
+                    {
+                        <div class="profile-avatar-initials">@initials</div>
+                    }
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <h4 class="mb-1 fw-semibold">@Model.FullName</h4>
+                    <div class="text-muted small mb-2">
+                        <i class="fas fa-envelope me-1"></i>@Model.Email
+                    </div>
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach (var role in Model.Roles)
+                        {
+                            <span class="badge bg-primary">@role</span>
+                        }
+                        @if (Model.Roles.Count == 0)
+                        {
+                            <span class="text-muted small">No roles assigned</span>
+                        }
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                            <i class="fas fa-circle fa-2xs me-1"></i>Active
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">
+                            <i class="fas fa-circle fa-2xs me-1"></i>Inactive
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Details -->
+        <div class="card @(Model.HasLinkedEmployee ? "mb-4" : "")">
+            <div class="card-body">
+                <h6 class="text-muted mb-3"><i class="fas fa-user-circle me-2"></i>Account Information</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small mb-1">Full Name</div>
+                        <div class="fw-semibold">@Model.FullName</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small mb-1">Email Address</div>
+                        <div class="fw-semibold">@Model.Email</div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+                    {
+                        <div class="col-md-6">
+                            <div class="text-muted small mb-1">Phone Number</div>
+                            <div class="fw-semibold">@Model.PhoneNumber</div>
+                        </div>
+                    }
+                    <div class="col-md-6">
+                        <div class="text-muted small mb-1">Member Since</div>
+                        <div class="fw-semibold">@Model.CreatedDate.ToString("dd MMM yyyy")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.HasLinkedEmployee)
+        {
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3"><i class="fas fa-id-card me-2"></i>Employee Information</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="text-muted small mb-1">Employee Number</div>
+                            <div class="fw-semibold">@Model.EmployeeNumber</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small mb-1">Department</div>
+                            <div class="fw-semibold">@(Model.DepartmentName ?? "—")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small mb-1">Designation</div>
+                            <div class="fw-semibold">@(Model.Designation ?? "—")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small mb-1">Hire Date</div>
+                            <div class="fw-semibold">@(Model.HireDate?.ToString("dd MMM yyyy") ?? "—")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Info Panel -->
+    <div class="col-lg-4">
+        <div class="card info-panel">
+            <div class="card-body">
+                <h6 class="info-panel-heading"><i class="fas fa-info-circle me-2"></i>Profile Info</h6>
+                <div class="info-panel-item">
+                    <i class="fas fa-user-shield text-primary"></i>
+                    <div>
+                        <strong>Read-Only View</strong>
+                        <p>Profile details are managed by an administrator. Contact admin to update your information.</p>
+                    </div>
+                </div>
+                @if (Model.HasLinkedEmployee)
+                {
+                    <div class="info-panel-item">
+                        <i class="fas fa-id-card text-success"></i>
+                        <div>
+                            <strong>Employee Record Linked</strong>
+                            <p>Your account is linked to an HR employee record. Contact HR to update your employee details.</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="info-panel-item">
+                        <i class="fas fa-unlink text-muted"></i>
+                        <div>
+                            <strong>No Employee Link</strong>
+                            <p>Not linked to an employee record. Contact HR if this should be updated.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .profile-avatar-wrap {
+        width: 80px;
+        height: 80px;
+    }
+
+    .profile-avatar-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--border-color);
+    }
+
+    .profile-avatar-initials {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--accent-blue);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        user-select: none;
+    }
+</style>

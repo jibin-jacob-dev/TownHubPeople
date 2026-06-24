@@ -1,0 +1,164 @@
+@{
+    ViewData["Title"] = "Login Slides";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
+
+<erp-page-header module="Administration" item="Login Slides">
+    <a asp-action="Create" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i>Add Slide
+    </a>
+</erp-page-header>
+
+@Html.AntiForgeryToken()
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h6 class="mb-0"><i class="fas fa-sort me-2 text-muted"></i>Slide Order</h6>
+                <span class="text-muted small" id="dragHint"><i class="fas fa-grip-vertical me-1"></i>Drag to reorder</span>
+            </div>
+            <div class="card-body p-0">
+                <div id="slideList" class="slide-sortable-list">
+                    <div class="slide-sortable-empty" id="emptyState">
+                        <i class="fas fa-images"></i>
+                        <p>Loading slides...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card info-panel">
+            <div class="card-body">
+                <h6 class="info-panel-heading"><i class="fas fa-lightbulb me-2"></i>Tips</h6>
+                <div class="info-panel-item">
+                    <i class="fas fa-grip-vertical text-primary"></i>
+                    <div>
+                        <strong>Drag &amp; Drop</strong>
+                        <p>Grab a slide by the handle and drag it to change the display order. Changes save automatically.</p>
+                    </div>
+                </div>
+                <div class="info-panel-item">
+                    <i class="fas fa-eye text-secondary"></i>
+                    <div>
+                        <strong>Visibility</strong>
+                        <p>Each slide can be shown on the Login page, the Register page, or both. Inactive slides are hidden everywhere.</p>
+                    </div>
+                </div>
+                <div class="info-panel-item">
+                    <i class="fas fa-image text-success"></i>
+                    <div>
+                        <strong>Image vs Icon</strong>
+                        <p>Slides with images show a full background. Slides without an image fall back to their icon and color.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var slideList = document.getElementById('slideList');
+    var emptyState = document.getElementById('emptyState');
+    var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+    function loadSlides() {
+        fetch('@Url.Action("GetAll")', {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': token }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (result) {
+            renderSlides(result.data);
+        });
+    }
+
+    function renderSlides(slides) {
+        if (!slides || slides.length === 0) {
+            slideList.innerHTML = '<div class="slide-sortable-empty"><i class="fas fa-images"></i><p>No slides yet. Click <strong>Add Slide</strong> to create one.</p></div>';
+            return;
+        }
+
+        slides.sort(function (a, b) { return a.sortOrder - b.sortOrder; });
+
+        var html = '';
+        slides.forEach(function (s, idx) {
+            var thumb = '';
+            if (s.imageFileName) {
+                thumb = '<img src="/uploads/slides/' + s.imageFileName + '" alt="" class="slide-item-thumb" />';
+            } else {
+                thumb = '<div class="slide-item-thumb slide-item-icon-thumb" style="background:' + (s.iconColor || '#3b82f6') + '15; color:' + (s.iconColor || '#3b82f6') + ';"><i class="fas ' + (s.iconClass || 'fa-image') + '"></i></div>';
+            }
+
+            var badges = '';
+            if (s.showOnLogin) badges += '<span class="slide-badge slide-badge-login"><i class="fas fa-sign-in-alt me-1"></i>Login</span>';
+            if (s.showOnRegister) badges += '<span class="slide-badge slide-badge-register"><i class="fas fa-user-plus me-1"></i>Register</span>';
+            if (!s.isActive) badges += '<span class="slide-badge slide-badge-inactive"><i class="fas fa-eye-slash me-1"></i>Inactive</span>';
+
+            var desc = s.description || '';
+            if (desc.length > 100) desc = desc.substring(0, 100) + '...';
+
+            html += '<div class="slide-sortable-item' + (!s.isActive ? ' slide-item-inactive' : '') + '" data-id="' + s.id + '">' +
+                '<div class="slide-item-handle"><i class="fas fa-grip-vertical"></i></div>' +
+                '<div class="slide-item-order">' + (idx + 1) + '</div>' +
+                thumb +
+                '<div class="slide-item-content">' +
+                    '<div class="slide-item-title">' + s.title + '</div>' +
+                    '<div class="slide-item-desc">' + (desc || '<span class="text-muted">No description</span>') + '</div>' +
+                    '<div class="slide-item-badges">' + badges + '</div>' +
+                '</div>' +
+                '<div class="slide-item-actions">' +
+                    '<a href="/Admin/LoginSlides/Edit/' + s.id + '" class="slide-item-btn slide-item-btn-edit" title="Edit"><i class="fas fa-pen"></i></a>' +
+                    '<button class="slide-item-btn slide-item-btn-delete" data-delete-url="/Admin/LoginSlides/Delete/' + s.id + '" title="Delete"><i class="fas fa-trash"></i></button>' +
+                '</div>' +
+            '</div>';
+        });
+
+        slideList.innerHTML = html;
+    }
+
+    function saveOrder() {
+        var items = [];
+        slideList.querySelectorAll('.slide-sortable-item').forEach(function (el, idx) {
+            items.push({ id: parseInt(el.dataset.id), sortOrder: idx + 1 });
+        });
+
+        fetch('@Url.Action("UpdateOrder")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            },
+            body: JSON.stringify(items)
+        }).then(function (r) { return r.json(); })
+          .then(function (result) {
+            if (result.success) {
+                slideList.querySelectorAll('.slide-item-order').forEach(function (el, idx) {
+                    el.textContent = idx + 1;
+                });
+                toastr.success('Order updated.');
+            }
+        });
+    }
+
+    loadSlides();
+
+    setTimeout(function () {
+        if (typeof Sortable !== 'undefined') {
+            Sortable.create(slideList, {
+                handle: '.slide-item-handle',
+                animation: 200,
+                ghostClass: 'slide-sortable-ghost',
+                chosenClass: 'slide-sortable-chosen',
+                dragClass: 'slide-sortable-drag',
+                onEnd: function () {
+                    saveOrder();
+                }
+            });
+        }
+    }, 300);
+</script>
+}

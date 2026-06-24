@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Roles";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
+
+<erp-page-header module="Administration" item="Roles">
+    <a asp-action="Create" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i>Add Role
+    </a>
+</erp-page-header>
+
+<div class="card">
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <table id="dataTable" class="table table-striped table-hover" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Users</th>
+                    <th>Created</th>
+                    <th width="120">Actions</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var table = initDataTable('dataTable', '@Url.Action("GetData")', [
+        { data: 'name' },
+        { data: 'description', render: function(data) { return data || '<span class="text-muted">-</span>'; } },
+        { data: 'userCount', render: function(data) { return '<span class="badge bg-primary">' + data + '</span>'; } },
+        { data: 'createdDate', render: function(data) { return new Date(data).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } },
+        { data: 'id', orderable: false, render: function(data, type, row) {
+            var html = '<a href="/Admin/Roles/Edit/' + data + '" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></a>';
+            if (row.userCount === 0) {
+                html += '<button class="btn btn-sm btn-outline-danger" data-delete-url="/Admin/Roles/Delete/' + data + '"><i class="fas fa-trash"></i></button>';
+            }
+            return html;
+        }}
+    ]);
+</script>
+}

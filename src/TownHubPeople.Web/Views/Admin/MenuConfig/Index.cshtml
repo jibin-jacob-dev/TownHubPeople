@@ -1,0 +1,366 @@
+@{
+    ViewData["Title"] = "Menu Configuration";
+    var roles = (List<string>)ViewBag.Roles;
+    var modules = (List<TownHubPeople.Application.Admin.MenuConfiguration.MenuItemDefinition>)ViewBag.Modules;
+}
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
+
+<erp-page-header module="Administration" item="Menu Configuration" />
+
+<ul class="nav section-tabs mb-4" id="menuConfigTabs">
+    <li class="nav-item"><button class="nav-link active" data-tab="access"><i class="fas fa-shield-alt me-1"></i>Access</button></li>
+    <li class="nav-item"><button class="nav-link" data-tab="display"><i class="fas fa-palette me-1"></i>Display &amp; Order</button></li>
+</ul>
+
+<!-- ACCESS SECTION -->
+<div id="tabAccess">
+    <div class="row g-3">
+        <!-- Role list -->
+        <div class="col-lg-3">
+            <div class="card h-100">
+                <div class="card-body p-2">
+                    <div class="small text-muted fw-semibold px-2 pt-1 pb-2">ROLES</div>
+                    <div id="roleList">
+                        @foreach (var role in roles)
+                        {
+                            <button type="button" class="role-card w-100 text-start" data-role="@role">
+                                <i class="fas fa-user-shield me-2 text-muted small"></i>@role
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Permissions panel -->
+        <div class="col-lg-9">
+            <div id="copyFromToolbar" class="d-none mb-3 d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-muted small"><i class="fas fa-copy me-1"></i>Copy all permissions from:</span>
+                <select id="copyFromSelect" class="form-select form-select-sm" style="max-width:200px;">
+                    <option value="">— select a role —</option>
+                    @foreach (var r in roles)
+                    {
+                        <option value="@r">@r</option>
+                    }
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-warning" onclick="doCopyFrom()">
+                    <i class="fas fa-copy me-1"></i>Apply
+                </button>
+                <span class="text-muted small">(overwrites current permissions)</span>
+            </div>
+            <div id="permissionsPanel">
+                <div class="text-center text-muted py-5"><i class="fas fa-arrow-left me-2"></i>Select a role</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DISPLAY & ORDER SECTION -->
+<div id="tabDisplay" class="d-none">
+    <div class="row g-3">
+        <!-- Module ordering -->
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3"><i class="fas fa-grip-vertical me-2 text-muted"></i>Module Order (Sidebar)</h6>
+                    <p class="text-muted small mb-3">Drag to reorder how modules appear in the sidebar.</p>
+                    <div id="moduleOrderList">
+                        @foreach (var m in modules)
+                        {
+                            <div class="display-tab-row" data-key="@m.Key">
+                                <span class="drag-handle text-muted me-2"><i class="fas fa-grip-vertical"></i></span>
+                                <i class="fas @m.Icon fa-fw me-2" style="color:@m.IconColor;"></i>
+                                <span>@m.DisplayName</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Tab editing -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3"><i class="fas fa-sliders-h me-2 text-muted"></i>Tab Display &amp; Order</h6>
+                    <div class="mb-3">
+                        <select id="moduleSelector" class="form-select form-select-sm" style="max-width:220px;">
+                            <option value="">— Select a module —</option>
+                            @foreach (var m in modules)
+                            {
+                                <option value="@m.Key">@m.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+                    <div id="tabDisplayList"><div class="text-muted small">Select a module above.</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+// ── Section tab switching ─────────────────────────────
+document.querySelectorAll('#menuConfigTabs .nav-link').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('#menuConfigTabs .nav-link').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        var tab = this.dataset.tab;
+        document.getElementById('tabAccess').classList.toggle('d-none', tab !== 'access');
+        document.getElementById('tabDisplay').classList.toggle('d-none', tab !== 'display');
+    });
+});
+
+// ── Role selection ────────────────────────────────────
+var currentRole = null;
+document.querySelectorAll('.role-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.role-card').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        currentRole = this.dataset.role;
+        loadPermissions(currentRole);
+    });
+});
+// Show copy-from toolbar when a role is selected
+document.querySelectorAll('.role-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+        document.getElementById('copyFromToolbar').classList.remove('d-none');
+        // Reset the copy-from select so current role isn't shown as an option to copy to itself
+        document.getElementById('copyFromSelect').value = '';
+    });
+});
+// Load first role on page load
+var firstRole = document.querySelector('.role-card');
+if (firstRole) firstRole.click();
+
+function loadPermissions(role) {
+    document.getElementById('permissionsPanel').innerHTML = '<div class="text-muted py-3 text-center"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div>';
+    fetch('/Admin/MenuConfig/GetRolePermissions?roleName=' + encodeURIComponent(role))
+        .then(r => r.json())
+        .then(data => renderPermissions(role, data));
+}
+
+function renderPermissions(role, modules) {
+    var html = '<div class="accordion" id="permAccordion">';
+    modules.forEach(function(m, mi) {
+        var colId = 'perm-mod-' + mi;
+        var allTabKeys = m.groups.flatMap(g => g.tabs.map(t => t.tabKey));
+        var grantedAll = allTabKeys.length > 0 && m.groups.flatMap(g => g.tabs).every(t => t.granted);
+        html += '<div class="permission-module mb-2">';
+        html += '<div class="permission-module-header d-flex align-items-center gap-2 p-2">';
+        html += '<button class="btn btn-link text-decoration-none p-0 flex-grow-1 text-start fw-semibold" data-bs-toggle="collapse" data-bs-target="#'+colId+'">';
+        html += '<i class="fas '+m.icon+' fa-fw me-2" style="color:'+m.iconColor+'"></i>'+m.moduleName;
+        html += '</button>';
+        html += '<div class="form-check form-switch mb-0 me-2" title="Module visibility">';
+        html += '<input class="form-check-input" type="checkbox" '+(m.hasMenuAccess?'checked':'')+' onchange="toggleMenu(\''+role+'\',\''+m.key+'\',this.checked)" />';
+        html += '</div>';
+        if (grantedAll) {
+            html += '<button class="btn btn-xs btn-outline-danger" onclick="toggleAllModule(\''+role+'\','+JSON.stringify(m)+',false)">Revoke all</button>';
+        } else {
+            html += '<button class="btn btn-xs btn-outline-success" onclick="toggleAllModule(\''+role+'\','+JSON.stringify(m)+',true)">Grant all</button>';
+        }
+        html += '</div>';
+        html += '<div id="'+colId+'" class="collapse show">';
+        html += '<div class="p-2 pt-0">';
+        m.groups.forEach(function(g) {
+            if (g.groupName) {
+                var groupGranted = g.tabs.every(t => t.granted);
+                html += '<div class="d-flex align-items-center gap-2 mb-1 mt-2">';
+                html += '<span class="small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;font-size:0.72rem;">'+g.groupName+'</span>';
+                html += '<div class="form-check form-switch mb-0 ms-auto" title="Grant all in group">';
+                html += '<input class="form-check-input" type="checkbox" '+(groupGranted?'checked':'')+' onchange="toggleGroup(\''+role+'\',\''+m.key+'\',\''+g.groupName+'\',this.checked,this)" />';
+                html += '</div></div>';
+            }
+            html += '<div class="d-flex flex-wrap gap-2 mb-2">';
+            g.tabs.forEach(function(t) {
+                html += '<div class="tab-toggle-chip '+(t.granted?'granted':'')+'">'+
+                    '<i class="fas '+t.icon+' me-1" style="color:'+t.iconColor+';font-size:0.75rem;"></i>'+
+                    '<span>'+t.displayName+'</span>'+
+                    '<div class="form-check form-switch mb-0 ms-1">' +
+                    '<input class="form-check-input" type="checkbox" '+(t.granted?'checked':'')+
+                    ' onchange="toggleTab(\''+role+'\',\''+m.key+'\',\''+t.tabKey+'\',this.checked,this)" />'+
+                    '</div></div>';
+            });
+            html += '</div>';
+        });
+        html += '</div></div></div>';
+    });
+    html += '</div>';
+    document.getElementById('permissionsPanel').innerHTML = html;
+}
+
+function post(url, body) {
+    return fetch(url, { method:'POST', headers:{'Content-Type':'application/json','RequestVerificationToken':token}, body:JSON.stringify(body) }).then(r=>r.json());
+}
+
+function toggleMenu(role, menuKey, grant) {
+    post('/Admin/MenuConfig/ToggleMenuAccess', {roleName:role, menuKey:menuKey, grant:grant});
+}
+
+function toggleTab(role, moduleKey, tabKey, grant, el) {
+    post('/Admin/MenuConfig/ToggleTabAccess', {roleName:role, moduleKey:moduleKey, tabKey:tabKey, grant:grant})
+        .then(function() {
+            var chip = el.closest('.tab-toggle-chip');
+            chip.classList.toggle('granted', grant);
+        });
+}
+
+function toggleGroup(role, moduleKey, groupName, grant, el) {
+    post('/Admin/MenuConfig/ToggleGroupAccess', {roleName:role, moduleKey:moduleKey, groupName:groupName, grant:grant})
+        .then(function(res) {
+            if (!res.success) return;
+            loadPermissions(currentRole);
+        });
+}
+
+function toggleAllModule(role, moduleData, grant) {
+    var promises = [];
+    moduleData.groups.forEach(g => g.tabs.forEach(t => {
+        promises.push(post('/Admin/MenuConfig/ToggleTabAccess', {roleName:role, moduleKey:moduleData.key, tabKey:t.tabKey, grant:grant}));
+    }));
+    Promise.all(promises).then(() => loadPermissions(currentRole));
+}
+
+// ── Module ordering ────────────────────────────────────
+var moduleList = document.getElementById('moduleOrderList');
+Sortable.create(moduleList, {
+    handle: '.drag-handle',
+    animation: 200,
+    onEnd: function() {
+        var keys = Array.from(moduleList.querySelectorAll('[data-key]')).map(el => el.dataset.key);
+        post('/Admin/MenuConfig/SaveModuleOrder', {moduleKeys: keys});
+    }
+});
+
+// ── Tab display & ordering ─────────────────────────────
+document.getElementById('moduleSelector').addEventListener('change', function() {
+    var key = this.value;
+    if (!key) { document.getElementById('tabDisplayList').innerHTML = '<div class="text-muted small">Select a module above.</div>'; return; }
+    loadTabDisplay(key);
+});
+
+var tabSortable = null;
+function loadTabDisplay(moduleKey) {
+    document.getElementById('tabDisplayList').innerHTML = '<div class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>Loading...</div>';
+    fetch('/Admin/MenuConfig/GetTabsForModule?moduleKey=' + encodeURIComponent(moduleKey))
+        .then(r => r.json())
+        .then(function(tabs) {
+            renderTabDisplay(moduleKey, tabs);
+        });
+}
+
+function renderTabDisplay(moduleKey, tabs) {
+    var html = '';
+    tabs.forEach(function(t) {
+        html += '<div class="display-tab-row '+(t.isOverridden?'is-overridden':'')+'" data-key="'+t.tabKey+'" '+
+            'data-module="'+moduleKey+'" data-static-name="'+escHtml(t.staticDisplayName)+'" '+
+            'data-static-icon="'+t.staticIcon+'" data-static-color="'+t.staticIconColor+'">';
+        html += '<span class="drag-handle text-muted me-2"><i class="fas fa-grip-vertical"></i></span>';
+        html += '<span class="tab-icon-preview me-2" style="color:'+t.iconColor+';" title="Click to edit icon"><i class="fas '+t.icon+' fa-fw"></i></span>';
+        html += '<span class="tab-display-name flex-grow-1" contenteditable="true" '+
+            'data-original="'+escHtml(t.displayName)+'" '+
+            'onblur="saveTabName(this,\''+moduleKey+'\',\''+t.tabKey+'\')" '+
+            'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}">'+escHtml(t.displayName)+'</span>';
+        if (t.group) html += '<span class="badge bg-light text-muted ms-2" style="font-size:0.65rem;">'+t.group+'</span>';
+        if (t.isOverridden) html += '<span class="override-dot ms-1" title="Customised"></span>';
+        html += '<button class="btn btn-xs btn-link text-muted ms-2" onclick="openIconEditor(this,\''+moduleKey+'\',\''+t.tabKey+'\',\''+t.icon+'\',\''+t.iconColor+'\')"><i class="fas fa-palette"></i></button>';
+        html += '<button class="btn btn-xs btn-link text-danger ms-1" '+(t.isOverridden?'':'disabled')+' onclick="resetTab(this,\''+moduleKey+'\',\''+t.tabKey+'\')"><i class="fas fa-undo"></i></button>';
+        html += '</div>';
+    });
+    document.getElementById('tabDisplayList').innerHTML = html || '<div class="text-muted small">No tabs.</div>';
+
+    var tabList = document.getElementById('tabDisplayList');
+    if (tabSortable) tabSortable.destroy();
+    tabSortable = Sortable.create(tabList, {
+        handle: '.drag-handle',
+        animation: 200,
+        onEnd: function() {
+            var keys = Array.from(tabList.querySelectorAll('[data-key]')).map(el => el.dataset.key);
+            post('/Admin/MenuConfig/SaveTabOrder', {moduleKey: moduleKey, tabKeys: keys});
+        }
+    });
+}
+
+function saveTabName(el, moduleKey, tabKey) {
+    var name = el.textContent.trim();
+    var original = el.dataset.original;
+    if (name === original) return;
+    if (!name) { el.textContent = original; return; }
+    var row = el.closest('.display-tab-row');
+    var iconEl = row.querySelector('.tab-icon-preview i');
+    var iconClasses = iconEl.className.split(' ').filter(c => c.startsWith('fa-') && c !== 'fa-fw');
+    var icon = iconClasses.length > 0 ? iconClasses[0] : 'fa-circle';
+    var color = row.querySelector('.tab-icon-preview').style.color;
+    post('/Admin/MenuConfig/SaveTabDisplay', {moduleKey:moduleKey, tabKey:tabKey, displayName:name, icon:icon, iconColor:color})
+        .then(() => { el.dataset.original = name; row.classList.add('is-overridden'); var resetBtn = row.querySelector('.btn-link.text-danger'); if(resetBtn) resetBtn.removeAttribute('disabled'); loadTabDisplay(moduleKey); });
+}
+
+// Icon editor popover (simple inline approach)
+var iconEditorTarget = null;
+function openIconEditor(btn, moduleKey, tabKey, currentIcon, currentColor) {
+    var existing = document.getElementById('iconEditorPopover');
+    if (existing) existing.remove();
+    iconEditorTarget = {btn: btn, moduleKey: moduleKey, tabKey: tabKey};
+    var div = document.createElement('div');
+    div.id = 'iconEditorPopover';
+    div.className = 'icon-editor-popover card shadow p-3';
+    div.innerHTML =
+        '<div class="mb-2"><label class="form-label small">FA Class (e.g. fa-users)</label>'+
+        '<div class="d-flex gap-2 align-items-center">'+
+        '<input type="text" class="form-control form-control-sm" id="ieIcon" value="'+currentIcon+'" />'+
+        '<i id="iePreview" class="fas '+currentIcon+' fa-lg" style="color:'+currentColor+';min-width:24px;"></i>'+
+        '</div></div>'+
+        '<div class="mb-3"><label class="form-label small">Colour</label>'+
+        '<input type="color" class="form-control form-control-color form-control-sm" id="ieColor" value="'+rgbToHex(currentColor)+'" style="width:48px;" /></div>'+
+        '<div class="d-flex gap-2">'+
+        '<button class="btn btn-primary btn-sm" onclick="saveIconEdit(\''+moduleKey+'\',\''+tabKey+'\')">Save</button>'+
+        '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'iconEditorPopover\').remove()">Cancel</button>'+
+        '</div>';
+    btn.closest('.display-tab-row').appendChild(div);
+    document.getElementById('ieIcon').addEventListener('input', function() {
+        document.getElementById('iePreview').className = 'fas ' + this.value + ' fa-lg';
+    });
+    document.getElementById('ieColor').addEventListener('input', function() {
+        document.getElementById('iePreview').style.color = this.value;
+    });
+}
+
+function saveIconEdit(moduleKey, tabKey) {
+    var icon = document.getElementById('ieIcon').value.trim();
+    var color = document.getElementById('ieColor').value;
+    var row = iconEditorTarget.btn.closest('.display-tab-row');
+    var name = row.querySelector('.tab-display-name').textContent.trim();
+    post('/Admin/MenuConfig/SaveTabDisplay', {moduleKey:moduleKey, tabKey:tabKey, displayName:name||null, icon:icon, iconColor:color})
+        .then(function() { var pop = document.getElementById('iconEditorPopover'); if(pop) pop.remove(); loadTabDisplay(moduleKey); });
+}
+
+function resetTab(btn, moduleKey, tabKey) {
+    if (!confirm('Reset this tab to its default display?')) return;
+    post('/Admin/MenuConfig/ResetTabDisplay', {moduleKey:moduleKey, tabKey:tabKey})
+        .then(() => loadTabDisplay(moduleKey));
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function rgbToHex(rgb) {
+    if (!rgb || rgb.startsWith('#')) return rgb || '#000000';
+    var m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (!m) return '#000000';
+    return '#'+[m[1],m[2],m[3]].map(x=>parseInt(x).toString(16).padStart(2,'0')).join('');
+}
+
+function doCopyFrom() {
+    var fromRole = document.getElementById('copyFromSelect').value;
+    if (!fromRole) { alert('Please select a source role.'); return; }
+    if (fromRole === currentRole) { alert('Cannot copy from the same role.'); return; }
+    if (!confirm('This will replace ALL permissions for "' + currentRole + '" with those from "' + fromRole + '". Continue?')) return;
+    post('/Admin/MenuConfig/CopyFromRole', {fromRole: fromRole, toRole: currentRole})
+        .then(function(res) {
+            if (res.success) loadPermissions(currentRole);
+            else alert('Copy failed: ' + (res.message || 'unknown error'));
+        });
+}
+</script>
+}

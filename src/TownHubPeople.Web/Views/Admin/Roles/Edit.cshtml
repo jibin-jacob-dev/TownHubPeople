@@ -1,0 +1,40 @@
+@model TownHubPeople.Web.ViewModels.Admin.CreateRoleViewModel
+@{
+    ViewData["Title"] = "Edit Role";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
+
+<erp-page-header module="Administration" item="Roles" action="Edit" />
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="Edit" asp-route-id="@ViewBag.Id" method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label asp-for="Description" class="form-label"></label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+                        <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <erp-hints module="Admin" feature="Role" />
+    </div>
+</div>
+
+@await Html.PartialAsync("_HistoryPanel", (EntityName: "ApplicationRole", EntityId: ((int)ViewBag.Id).ToString()))

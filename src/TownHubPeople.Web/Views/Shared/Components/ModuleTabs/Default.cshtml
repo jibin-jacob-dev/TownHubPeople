@@ -1,0 +1,77 @@
+@model TownHubPeople.Web.ViewComponents.ModuleTabsViewModel
+@{
+    var path = Context.Request.Path.ToString().ToLower();
+    string ActiveClass(string segment) => path.Contains(segment) ? "active" : "";
+}
+
+@if (!Model.IsGrouped)
+{
+    <div class="module-tabs">
+        <button type="button" class="module-tabs-arrow module-tabs-arrow-left" aria-label="Scroll left" tabindex="-1">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="module-tabs-scroll">
+            <ul class="nav nav-tabs module-nav-tabs">
+                @foreach (var tab in Model.FlatTabs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link @ActiveClass(tab.PathSegment)" href="@tab.Url" aria-current="@(ActiveClass(tab.PathSegment) == "active" ? "page" : null)">
+                            <i class="fas @tab.Icon fa-fw me-1" style="color:@tab.IconColor;" aria-hidden="true"></i>@tab.DisplayName
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+        <button type="button" class="module-tabs-arrow module-tabs-arrow-right" aria-label="Scroll right" tabindex="-1">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+}
+else
+{
+    var activeGroup = Model.Groups.FirstOrDefault(g => g.IsActive) ?? Model.Groups.First();
+
+    @* Group pills — top bar *@
+    <div class="module-tabs module-tabs-groups">
+        <button type="button" class="module-tabs-arrow module-tabs-arrow-left" aria-label="Scroll left" tabindex="-1">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="module-tabs-scroll">
+            <ul class="nav module-group-pills">
+                @foreach (var group in Model.Groups)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link @(group.IsActive ? "active" : "")" href="@group.FirstTabUrl" style="--gc:@group.Color" aria-current="@(group.IsActive ? "page" : null)">
+                            <i class="fas @group.Icon fa-fw me-1" style="color:@group.Color;" aria-hidden="true"></i>@group.Name
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+        <button type="button" class="module-tabs-arrow module-tabs-arrow-right" aria-label="Scroll right" tabindex="-1">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+    @* Sub-tabs — bottom bar (only active group's tabs) *@
+    <div class="module-tabs module-tabs-subtabs">
+        <button type="button" class="module-tabs-arrow module-tabs-arrow-left" aria-label="Scroll left" tabindex="-1">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="module-tabs-scroll">
+            <ul class="nav nav-tabs module-nav-tabs">
+                @foreach (var tab in activeGroup.Tabs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link @ActiveClass(tab.PathSegment)" href="@tab.Url" aria-current="@(ActiveClass(tab.PathSegment) == "active" ? "page" : null)">
+                            <i class="fas @tab.Icon fa-fw me-1" style="color:@tab.IconColor;" aria-hidden="true"></i>@tab.DisplayName
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+        <button type="button" class="module-tabs-arrow module-tabs-arrow-right" aria-label="Scroll right" tabindex="-1">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+}

@@ -1,0 +1,28 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+
+## IDE
+.vs/
+.vscode/
+*.swp
+
+## Logs
+Logs/
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Claude Code
+.claude/
+
+## Runtime user uploads (HR documents, etc.)
+src/TownHubERP.Web/wwwroot/uploads/
