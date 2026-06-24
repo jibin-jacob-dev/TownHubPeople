@@ -501,6 +501,43 @@ function initFormModalPlugins(scope, opts) {
     // Login slide: image dropzone (initDropzone is document-scoped via element IDs)
     if (scope.querySelector('#dropzone') && typeof initDropzone === 'function') {
         initDropzone('dropzone', 'imageInput', 'dropzoneIdle', 'dropzonePreview', 'previewImg', 'fileName', 'fileSize', 'removeFile');
+
+        // A file input can't be repopulated from a server re-render, so the popup keeps the
+        // chosen File in opts.fileStore and reattaches it here via DataTransfer after a
+        // validation round-trip — otherwise the user would lose their upload.
+        var imageInput = scope.querySelector('#imageInput');
+        if (imageInput && opts.fileStore) {
+            if (opts.fileStore.file) {
+                try {
+                    var dt = new DataTransfer();
+                    dt.items.add(opts.fileStore.file);
+                    imageInput.files = dt.files;
+                    imageInput.dispatchEvent(new Event('change', { bubbles: true }));
+                } catch (e) { /* DataTransfer unsupported — user re-picks, no crash */ }
+            }
+            imageInput.addEventListener('change', function () {
+                if (this.files && this.files[0]) opts.fileStore.file = this.files[0];
+            });
+        }
+    }
+
+    // Wire jQuery-unobtrusive client-side validation onto the (freshly injected) form so
+    // errors show instantly without a server round-trip. removeData() clears any stale
+    // validator cached on a re-rendered form before re-parsing.
+    var form = scope.querySelector ? scope.querySelector('form') : null;
+    if (form && window.jQuery && jQuery.validator && jQuery.validator.unobtrusive) {
+        jQuery(form).removeData('validator').removeData('unobtrusiveValidation');
+        jQuery.validator.unobtrusive.parse(form);
+    }
+
+    // Popup-only: track edits (for the unsaved-changes guard) and focus the first field.
+    if (form && opts.onDirty) {
+        form.addEventListener('input', opts.onDirty);
+        form.addEventListener('change', opts.onDirty);
+    }
+    if (form && opts.focus) {
+        var first = form.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=file]), textarea');
+        if (first) first.focus();
     }
 }
 
@@ -508,37 +545,104 @@ function initFormModalPlugins(scope, opts) {
 // fetch, surfaces server-side validation inline, and reloads the list on success.
 function openFormModal(o) {
     var url = o.url;
+    var dirty = false;                 // has the user edited the form?
+    var fileStore = { file: null };    // survives validation re-renders (see initFormModalPlugins)
+
+    // Options handed to initFormModalPlugins on every (re)render of the form.
+    function formOpts() {
+        return {
+            dropdownParent: jQuery(Swal.getPopup()),
+            fileStore: fileStore,
+            onDirty: function () { dirty = true; },
+            focus: true
+        };
+    }
+
+    // (Re)injects form HTML, wires plugins, and resets dirty — a fresh render from the
+    // server isn't a user edit until they touch a field again.
+    function renderForm(html) {
+        var c = Swal.getHtmlContainer();
+        c.innerHTML = html;
+        initFormModalPlugins(c, formOpts());
+        dirty = false;
+    }
+
+    // A styled in-popup "Discard changes?" confirmation (instead of the native browser
+    // confirm). Rendered as a layer inside the current Swal so there's no nested-modal
+    // issue and the form keeps its state if the user chooses to keep editing.
+    function showDiscardConfirm() {
+        var popup = Swal.getPopup();
+        if (popup.querySelector('.swal-discard-overlay')) return;
+        var ov = document.createElement('div');
+        ov.className = 'swal-discard-overlay';
+        ov.innerHTML =
+            '<div class="swal-discard-box">' +
+                '<div class="swal-discard-icon"><i class="fas fa-triangle-exclamation"></i></div>' +
+                '<div class="swal-discard-title">Discard changes?</div>' +
+                '<div class="swal-discard-text">Your unsaved changes will be lost.</div>' +
+                '<div class="swal-discard-actions">' +
+                    '<button type="button" class="btn btn-secondary" data-discard="no">Keep editing</button>' +
+                    '<button type="button" class="btn btn-danger" data-discard="yes">Discard</button>' +
+                '</div>' +
+            '</div>';
+        popup.appendChild(ov);
+        ov.querySelector('[data-discard="no"]').addEventListener('click', function () { ov.remove(); });
+        ov.querySelector('[data-discard="yes"]').addEventListener('click', function () { Swal.close(); });
+    }
+
     Swal.fire({
         title: o.title,
         html: '<div class="swal-form-loading"><span class="spinner-border spinner-border-sm text-primary"></span> Loading…</div>',
         width: o.width || 760,
-        showCancelButton: true,
         confirmButtonText: '<i class="fas fa-save me-1"></i>Save',
-        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#2563eb',
+        showDenyButton: true,
+        denyButtonText: 'Cancel',
+        denyButtonColor: '#6c757d',
+        showCancelButton: false,
         focusConfirm: false,
         showLoaderOnConfirm: true,
-        allowOutsideClick: function () { return !Swal.isLoading(); },
+        // When the form is dirty, block accidental dismissal (Esc / backdrop); the explicit
+        // Cancel button still works but routes through preDeny's discard confirmation.
+        allowOutsideClick: function () { return !Swal.isLoading() && !dirty; },
+        allowEscapeKey: function () { return !dirty; },
         customClass: { popup: 'swal-form-popup', htmlContainer: 'swal-form-container' },
         didOpen: function () {
             fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(function (r) { return r.text(); })
-                .then(function (html) {
-                    var c = Swal.getHtmlContainer();
-                    c.innerHTML = html;
-                    initFormModalPlugins(c, { dropdownParent: jQuery(Swal.getPopup()) });
-                })
+                .then(renderForm)
                 .catch(function () {
                     Swal.getHtmlContainer().innerHTML = '<div class="text-danger">Failed to load the form.</div>';
                 });
         },
+        preDeny: function () {
+            // Cancel: if there are unsaved edits, show the styled in-popup confirmation
+            // and keep the form open; the overlay closes the popup if the user confirms.
+            if (!dirty) return true;
+            showDiscardConfirm();
+            return false;
+        },
         preConfirm: function () {
             var form = Swal.getPopup().querySelector('form');
             if (!form) { Swal.showValidationMessage('Form not loaded.'); return false; }
+
+            // Client-side gate: don't even hit the server if the form is invalid.
+            if (window.jQuery && jQuery.fn.valid && !jQuery(form).valid()) {
+                return false;
+            }
+
             return fetch(form.getAttribute('action'), {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: new FormData(form)
             }).then(function (resp) {
+                // Session expiry / not authorized: surface a clear message rather than
+                // injecting the returned login page into the popup.
+                if (resp.status === 401 || resp.status === 403 ||
+                    (resp.redirected && resp.url.indexOf('/Account/Login') !== -1)) {
+                    Swal.showValidationMessage('Your session has expired — reload the page and sign in again.');
+                    return { ok: false };
+                }
                 if (resp.ok) {
                     return resp.json().then(function (data) {
                         if (data && data.success === false) {
@@ -550,9 +654,7 @@ function openFormModal(o) {
                 }
                 // Validation / business error: server returns the form partial with messages
                 return resp.text().then(function (html) {
-                    var c = Swal.getHtmlContainer();
-                    c.innerHTML = html;
-                    initFormModalPlugins(c, { dropdownParent: jQuery(Swal.getPopup()) });
+                    renderForm(html);
                     Swal.showValidationMessage('Please correct the highlighted fields.');
                     return { ok: false };
                 });
