@@ -567,6 +567,29 @@ function openFormModal(o) {
         dirty = false;
     }
 
+    // A styled in-popup "Discard changes?" confirmation (instead of the native browser
+    // confirm). Rendered as a layer inside the current Swal so there's no nested-modal
+    // issue and the form keeps its state if the user chooses to keep editing.
+    function showDiscardConfirm() {
+        var popup = Swal.getPopup();
+        if (popup.querySelector('.swal-discard-overlay')) return;
+        var ov = document.createElement('div');
+        ov.className = 'swal-discard-overlay';
+        ov.innerHTML =
+            '<div class="swal-discard-box">' +
+                '<div class="swal-discard-icon"><i class="fas fa-triangle-exclamation"></i></div>' +
+                '<div class="swal-discard-title">Discard changes?</div>' +
+                '<div class="swal-discard-text">Your unsaved changes will be lost.</div>' +
+                '<div class="swal-discard-actions">' +
+                    '<button type="button" class="btn btn-secondary" data-discard="no">Keep editing</button>' +
+                    '<button type="button" class="btn btn-danger" data-discard="yes">Discard</button>' +
+                '</div>' +
+            '</div>';
+        popup.appendChild(ov);
+        ov.querySelector('[data-discard="no"]').addEventListener('click', function () { ov.remove(); });
+        ov.querySelector('[data-discard="yes"]').addEventListener('click', function () { Swal.close(); });
+    }
+
     Swal.fire({
         title: o.title,
         html: '<div class="swal-form-loading"><span class="spinner-border spinner-border-sm text-primary"></span> Loading…</div>',
@@ -593,8 +616,11 @@ function openFormModal(o) {
                 });
         },
         preDeny: function () {
-            // Cancel: confirm before discarding unsaved edits.
-            return !dirty || window.confirm('Discard your changes?');
+            // Cancel: if there are unsaved edits, show the styled in-popup confirmation
+            // and keep the form open; the overlay closes the popup if the user confirms.
+            if (!dirty) return true;
+            showDiscardConfirm();
+            return false;
         },
         preConfirm: function () {
             var form = Swal.getPopup().querySelector('form');

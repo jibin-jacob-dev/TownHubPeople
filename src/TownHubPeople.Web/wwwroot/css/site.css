@@ -3018,3 +3018,53 @@ span.flatpickr-weekday {
 [data-theme="dark"] .swal-form-container .form-check-label {
     color: var(--text-secondary);
 }
+
+/* In-popup "Discard changes?" confirmation layer (replaces the native browser confirm).
+   Token-based so it themes itself in light/dark. */
+.swal-form-popup { position: relative; }
+
+.swal-discard-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--overlay-bg);
+    border-radius: inherit;
+}
+
+.swal-discard-box {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    width: min(90%, 360px);
+    text-align: center;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+}
+
+.swal-discard-icon {
+    font-size: 2rem;
+    color: #f59e0b;
+    margin-bottom: 0.5rem;
+}
+
+.swal-discard-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 0.25rem;
+}
+
+.swal-discard-text {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+
+.swal-discard-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
