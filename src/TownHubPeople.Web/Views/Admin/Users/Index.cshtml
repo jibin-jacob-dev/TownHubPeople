@@ -5,9 +5,9 @@
 @await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
 
 <erp-page-header module="Administration" item="Users">
-    <a asp-action="Create" class="btn btn-primary btn-sm">
+    <button type="button" class="btn btn-primary btn-sm" data-form-url="@Url.Action("Create")" data-form-title="Add User">
         <i class="fas fa-plus me-1"></i>Add User
-    </a>
+    </button>
 </erp-page-header>
 
 <div class="card">
@@ -40,7 +40,7 @@
         { data: 'isActive', render: function(data) { return data ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'; } },
         { data: 'createdDate', render: function(data) { return new Date(data).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } },
         { data: 'id', orderable: false, render: function(data) {
-            return '<a href="/Admin/Users/Edit/' + data + '" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>';
+            return '<button type="button" class="btn btn-sm btn-outline-primary" data-form-url="/Admin/Users/Edit/' + data + '" data-form-title="Edit User"><i class="fas fa-edit"></i></button>';
         }}
     ]);
 </script>

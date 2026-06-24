@@ -1,0 +1,99 @@
+@model TownHubPeople.Web.ViewModels.Admin.LoginSlideViewModel
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="row">
+        <div class="col-md-8 mb-3">
+            <label asp-for="Title" class="form-label"></label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="SortOrder" class="form-label"></label>
+            <input asp-for="SortOrder" type="number" class="form-control" />
+        </div>
+        <div class="col-md-12 mb-3">
+            <label asp-for="Description" class="form-label"></label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Description" class="text-danger small"></span>
+        </div>
+        <div class="col-md-12 mb-3">
+            <label class="form-label">Slide Image</label>
+            <div class="dropzone-wrapper" id="dropzone">
+                <input type="file" name="image" id="imageInput" accept="image/jpeg,image/png,image/webp" class="dropzone-file-input" />
+                @if (!string.IsNullOrEmpty(Model.ExistingImageFileName))
+                {
+                    <div class="dropzone-idle" id="dropzoneIdle" style="display:none;"></div>
+                    <div class="dropzone-preview" id="dropzonePreview">
+                        <img id="previewImg" src="/uploads/slides/@Model.ExistingImageFileName" alt="Current" />
+                        <div class="dropzone-file-info">
+                            <span class="dropzone-file-name" id="fileName">@Model.ExistingImageFileName</span>
+                            <span class="dropzone-file-size" id="fileSize">Current image</span>
+                        </div>
+                        <button type="button" class="dropzone-remove" id="removeFile" title="Replace">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="dropzone-idle" id="dropzoneIdle">
+                        <div class="dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                        <div class="dropzone-text">
+                            <span class="dropzone-primary">Drop your image here, or <span class="dropzone-link">browse</span></span>
+                            <span class="dropzone-secondary">JPG, PNG or WebP — max 5 MB</span>
+                        </div>
+                    </div>
+                    <div class="dropzone-preview" id="dropzonePreview" style="display:none;">
+                        <img id="previewImg" alt="Preview" />
+                        <div class="dropzone-file-info">
+                            <span class="dropzone-file-name" id="fileName"></span>
+                            <span class="dropzone-file-size" id="fileSize"></span>
+                        </div>
+                        <button type="button" class="dropzone-remove" id="removeFile" title="Remove">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+            <input type="hidden" asp-for="ExistingImageFileName" />
+            @Html.ValidationMessage("image", null, new { @class = "text-danger small d-block mt-1" })
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="IconClass" class="form-label"></label>
+            <div class="input-group">
+                <span class="input-group-text"><i id="iconPreview" class="fas @Model.IconClass"></i></span>
+                <input asp-for="IconClass" class="form-control" id="iconClassInput" placeholder="e.g. fa-chart-line" />
+            </div>
+            <span class="text-muted small">FontAwesome class (without "fas" prefix)</span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="IconColor" class="form-label"></label>
+            <input asp-for="IconColor" type="color" class="form-control form-control-color" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="form-check form-switch">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="form-check form-switch">
+                <input asp-for="ShowOnLogin" class="form-check-input" type="checkbox" />
+                <label asp-for="ShowOnLogin" class="form-check-label"></label>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="form-check form-switch">
+                <input asp-for="ShowOnRegister" class="form-check-input" type="checkbox" />
+                <label asp-for="ShowOnRegister" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+    <div class="form-actions mt-3">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+        <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+</form>

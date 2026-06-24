@@ -12,84 +12,7 @@
         <div class="card">
             <div class="card-header"><h6 class="mb-0">Create Login Slide</h6></div>
             <div class="card-body">
-                <form asp-action="Create" method="post" enctype="multipart/form-data">
-                    @Html.AntiForgeryToken()
-                    <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label asp-for="Title" class="form-label"></label>
-                            <input asp-for="Title" class="form-control" />
-                            <span asp-validation-for="Title" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="SortOrder" class="form-label"></label>
-                            <input asp-for="SortOrder" type="number" class="form-control" />
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <label asp-for="Description" class="form-label"></label>
-                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-                            <span asp-validation-for="Description" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Slide Image</label>
-                            <div class="dropzone-wrapper" id="dropzone">
-                                <input type="file" name="image" id="imageInput" accept="image/jpeg,image/png,image/webp" class="dropzone-file-input" />
-                                <div class="dropzone-idle" id="dropzoneIdle">
-                                    <div class="dropzone-icon">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                    </div>
-                                    <div class="dropzone-text">
-                                        <span class="dropzone-primary">Drop your image here, or <span class="dropzone-link">browse</span></span>
-                                        <span class="dropzone-secondary">JPG, PNG or WebP — max 5 MB</span>
-                                    </div>
-                                </div>
-                                <div class="dropzone-preview" id="dropzonePreview" style="display:none;">
-                                    <img id="previewImg" alt="Preview" />
-                                    <div class="dropzone-file-info">
-                                        <span class="dropzone-file-name" id="fileName"></span>
-                                        <span class="dropzone-file-size" id="fileSize"></span>
-                                    </div>
-                                    <button type="button" class="dropzone-remove" id="removeFile" title="Remove">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="IconClass" class="form-label"></label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i id="iconPreview" class="fas fa-chart-line"></i></span>
-                                <input asp-for="IconClass" class="form-control" id="iconClassInput" placeholder="e.g. fa-chart-line" />
-                            </div>
-                            <span class="text-muted small">FontAwesome class (without "fas" prefix)</span>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="IconColor" class="form-label"></label>
-                            <input asp-for="IconColor" type="color" class="form-control form-control-color" />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="form-check form-switch">
-                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
-                                <label asp-for="IsActive" class="form-check-label"></label>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="form-check form-switch">
-                                <input asp-for="ShowOnLogin" class="form-check-input" type="checkbox" />
-                                <label asp-for="ShowOnLogin" class="form-check-label"></label>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="form-check form-switch">
-                                <input asp-for="ShowOnRegister" class="form-check-input" type="checkbox" />
-                                <label asp-for="ShowOnRegister" class="form-check-label"></label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
-                        <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
-                    </div>
-                </form>
+                @await Html.PartialAsync("_CreateForm", Model)
             </div>
         </div>
     </div>
@@ -99,10 +22,7 @@
 </div>
 
 @section Scripts {
-<script>
-    document.getElementById('iconClassInput').addEventListener('input', function () {
-        document.getElementById('iconPreview').className = 'fas ' + this.value;
-    });
-    initDropzone('dropzone', 'imageInput', 'dropzoneIdle', 'dropzonePreview', 'previewImg', 'fileName', 'fileSize', 'removeFile');
-</script>
+    <script>
+        initFormModalPlugins(document);
+    </script>
 }

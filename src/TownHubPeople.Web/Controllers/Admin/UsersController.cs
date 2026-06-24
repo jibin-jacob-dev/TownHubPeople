@@ -23,6 +23,35 @@ public class UsersController : BaseController
         _roleManager = roleManager;
     }
 
+    // AJAX-aware result helpers: popup forms expect the form partial (HTTP 400) on validation
+    // failure and a JSON envelope on success/record-missing; full-page requests fall back to
+    // the classic view + redirect + TempData notification.
+    private IActionResult InvalidCreate(CreateUserViewModel model)
+    {
+        if (IsAjax()) { Response.StatusCode = 400; return PartialView($"{ViewPath}/_CreateForm.cshtml", model); }
+        return View($"{ViewPath}/Create.cshtml", model);
+    }
+
+    private IActionResult InvalidEdit(EditUserViewModel model)
+    {
+        if (IsAjax()) { Response.StatusCode = 400; return PartialView($"{ViewPath}/_EditForm.cshtml", model); }
+        return View($"{ViewPath}/Edit.cshtml", model);
+    }
+
+    private IActionResult Saved(string message)
+    {
+        if (IsAjax()) return Json(new { success = true, message });
+        SuccessNotification(message);
+        return RedirectToAction(nameof(Index));
+    }
+
+    private IActionResult RecordMissing(string message)
+    {
+        if (IsAjax()) return Json(new { success = false, message });
+        ErrorNotification(message);
+        return RedirectToAction(nameof(Index));
+    }
+
     [Route("")]
     public IActionResult Index()
     {
@@ -101,6 +130,8 @@ public class UsersController : BaseController
         {
             AvailableRoles = await _roleManager.Roles.OrderBy(r => r.Name).Select(r => r.Name!).ToListAsync()
         };
+        if (IsAjax())
+            return PartialView($"{ViewPath}/_CreateForm.cshtml", model);
         return View($"{ViewPath}/Create.cshtml", model);
     }
 
@@ -112,7 +143,7 @@ public class UsersController : BaseController
         model.AvailableRoles = await _roleManager.Roles.OrderBy(r => r.Name).Select(r => r.Name!).ToListAsync();
 
         if (!ModelState.IsValid)
-            return View($"{ViewPath}/Create.cshtml", model);
+            return InvalidCreate(model);
 
         var user = new ApplicationUser
         {
@@ -131,14 +162,13 @@ public class UsersController : BaseController
         {
             foreach (var error in result.Errors)
                 ModelState.AddModelError(string.Empty, error.Description);
-            return View($"{ViewPath}/Create.cshtml", model);
+            return InvalidCreate(model);
         }
 
         if (model.SelectedRoles.Count > 0)
             await _userManager.AddToRolesAsync(user, model.SelectedRoles);
 
-        SuccessNotification("User created successfully.");
-        return RedirectToAction(nameof(Index));
+        return Saved("User created successfully.");
     }
 
     [Route("Edit/{id}")]
@@ -146,10 +176,7 @@ public class UsersController : BaseController
     {
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
-        {
-            ErrorNotification("User not found.");
-            return RedirectToAction(nameof(Index));
-        }
+            return RecordMissing("User not found.");
 
         var userRoles = await _userManager.GetRolesAsync(user);
 
@@ -164,6 +191,8 @@ public class UsersController : BaseController
             AvailableRoles = await _roleManager.Roles.OrderBy(r => r.Name).Select(r => r.Name!).ToListAsync()
         };
 
+        if (IsAjax())
+            return PartialView($"{ViewPath}/_EditForm.cshtml", model);
         return View($"{ViewPath}/Edit.cshtml", model);
     }
 
@@ -175,14 +204,11 @@ public class UsersController : BaseController
         model.AvailableRoles = await _roleManager.Roles.OrderBy(r => r.Name).Select(r => r.Name!).ToListAsync();
 
         if (!ModelState.IsValid)
-            return View($"{ViewPath}/Edit.cshtml", model);
+            return InvalidEdit(model);
 
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
-        {
-            ErrorNotification("User not found.");
-            return RedirectToAction(nameof(Index));
-        }
+            return RecordMissing("User not found.");
 
         user.FirstName = model.FirstName;
         user.LastName = model.LastName;
@@ -195,7 +221,7 @@ public class UsersController : BaseController
         {
             foreach (var error in result.Errors)
                 ModelState.AddModelError(string.Empty, error.Description);
-            return View($"{ViewPath}/Edit.cshtml", model);
+            return InvalidEdit(model);
         }
 
         if (!string.IsNullOrEmpty(model.NewPassword))
@@ -206,7 +232,7 @@ public class UsersController : BaseController
             {
                 foreach (var error in passwordResult.Errors)
                     ModelState.AddModelError(string.Empty, error.Description);
-                return View($"{ViewPath}/Edit.cshtml", model);
+                return InvalidEdit(model);
             }
         }
 
@@ -219,7 +245,6 @@ public class UsersController : BaseController
         if (rolesToAdd.Count > 0)
             await _userManager.AddToRolesAsync(user, rolesToAdd);
 
-        SuccessNotification("User updated successfully.");
-        return RedirectToAction(nameof(Index));
+        return Saved("User updated successfully.");
     }
 }

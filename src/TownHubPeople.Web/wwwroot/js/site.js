@@ -399,6 +399,18 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Popup Create/Edit forms (delegated, mirrors the delete handler above).
+    // A [data-form-url] trigger opens the form (fetched as a partial) inside SweetAlert2.
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-form-url]');
+        if (!btn) return;
+        e.preventDefault();
+        openFormModal({
+            url: btn.dataset.formUrl,
+            title: btn.dataset.formTitle || 'Form'
+        });
+    });
 });
 
 // Standard Edit/Delete actions column for DataTables. Replaces the copy-pasted render string.
@@ -412,7 +424,11 @@ function actionsColumn(opts) {
         render: function (data, type, row) {
             var html = '';
             if (opts.edit) {
-                html += '<a href="' + opts.edit + '/' + data + '" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></a>';
+                if (opts.editModal) {
+                    html += '<button type="button" class="btn btn-sm btn-outline-primary me-1" data-form-url="' + opts.edit + '/' + data + '" data-form-title="' + (opts.editTitle || 'Edit') + '"><i class="fas fa-edit"></i></button>';
+                } else {
+                    html += '<a href="' + opts.edit + '/' + data + '" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></a>';
+                }
             }
             if (opts.del) {
                 html += '<button class="btn btn-sm btn-outline-danger" data-delete-url="' + opts.del + '/' + data + '"><i class="fas fa-trash"></i></button>';
@@ -423,6 +439,135 @@ function actionsColumn(opts) {
             return html;
         }
     };
+}
+
+// Reloads whatever list the current page shows after a popup form saves.
+// DataTables pages expose a global `table`; the Login Slides page exposes `window.refreshGrid`.
+function refreshCurrentGrid() {
+    if (typeof window.refreshGrid === 'function') { window.refreshGrid(); return; }
+    if (window.table && window.table.ajax) { window.table.ajax.reload(null, false); return; }
+    location.reload();
+}
+
+// Initializes the plugins/behaviours a form partial may need. Called both for popup
+// forms (scope = the Swal popup, with dropdownParent set so select2 isn't clipped) and
+// for the full-page fallback views (scope = document). Everything is scoped + guarded so
+// it's safe to run regardless of which fields the form actually contains.
+function initFormModalPlugins(scope, opts) {
+    scope = scope || document;
+    opts = opts || {};
+
+    // select2 multi/single selects
+    if (window.jQuery && jQuery.fn.select2) {
+        jQuery(scope).find('.js-select2').each(function () {
+            var cfg = {
+                width: '100%',
+                theme: 'bootstrap-5',
+                allowClear: true,
+                placeholder: jQuery(this).data('placeholder') || 'Select…'
+            };
+            if (opts.dropdownParent) cfg.dropdownParent = opts.dropdownParent;
+            jQuery(this).select2(cfg);
+        });
+    }
+
+    // Role create/edit: "copy from role" vs "apply preset" mutual exclusion + hint
+    var copySelect = scope.querySelector('#copyFromSelect');
+    var presetSelect = scope.querySelector('#presetSelect');
+    if (copySelect && presetSelect) {
+        var hint = scope.querySelector('#permissionHint');
+        var updateHint = function () {
+            if (hint) hint.classList.toggle('d-none', !(copySelect.value || presetSelect.value));
+            presetSelect.disabled = !!copySelect.value;
+            copySelect.disabled = !!(presetSelect.value && !copySelect.value);
+            if (!copySelect.value && !presetSelect.value) {
+                copySelect.disabled = false;
+                presetSelect.disabled = false;
+            }
+        };
+        copySelect.addEventListener('change', updateHint);
+        presetSelect.addEventListener('change', updateHint);
+    }
+
+    // Login slide: live FontAwesome icon preview
+    var iconInput = scope.querySelector('#iconClassInput');
+    var iconPreview = scope.querySelector('#iconPreview');
+    if (iconInput && iconPreview) {
+        iconInput.addEventListener('input', function () {
+            iconPreview.className = 'fas ' + this.value;
+        });
+    }
+
+    // Login slide: image dropzone (initDropzone is document-scoped via element IDs)
+    if (scope.querySelector('#dropzone') && typeof initDropzone === 'function') {
+        initDropzone('dropzone', 'imageInput', 'dropzoneIdle', 'dropzonePreview', 'previewImg', 'fileName', 'fileSize', 'removeFile');
+    }
+}
+
+// Opens a Create/Edit form (fetched as a partial) inside a SweetAlert2 popup, posts it via
+// fetch, surfaces server-side validation inline, and reloads the list on success.
+function openFormModal(o) {
+    var url = o.url;
+    Swal.fire({
+        title: o.title,
+        html: '<div class="swal-form-loading"><span class="spinner-border spinner-border-sm text-primary"></span> Loading…</div>',
+        width: o.width || 760,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-save me-1"></i>Save',
+        cancelButtonText: 'Cancel',
+        focusConfirm: false,
+        showLoaderOnConfirm: true,
+        allowOutsideClick: function () { return !Swal.isLoading(); },
+        customClass: { popup: 'swal-form-popup', htmlContainer: 'swal-form-container' },
+        didOpen: function () {
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.text(); })
+                .then(function (html) {
+                    var c = Swal.getHtmlContainer();
+                    c.innerHTML = html;
+                    initFormModalPlugins(c, { dropdownParent: jQuery(Swal.getPopup()) });
+                })
+                .catch(function () {
+                    Swal.getHtmlContainer().innerHTML = '<div class="text-danger">Failed to load the form.</div>';
+                });
+        },
+        preConfirm: function () {
+            var form = Swal.getPopup().querySelector('form');
+            if (!form) { Swal.showValidationMessage('Form not loaded.'); return false; }
+            return fetch(form.getAttribute('action'), {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(form)
+            }).then(function (resp) {
+                if (resp.ok) {
+                    return resp.json().then(function (data) {
+                        if (data && data.success === false) {
+                            Swal.showValidationMessage(data.message || 'Could not save.');
+                            return { ok: false };
+                        }
+                        return { ok: true, data: data };
+                    });
+                }
+                // Validation / business error: server returns the form partial with messages
+                return resp.text().then(function (html) {
+                    var c = Swal.getHtmlContainer();
+                    c.innerHTML = html;
+                    initFormModalPlugins(c, { dropdownParent: jQuery(Swal.getPopup()) });
+                    Swal.showValidationMessage('Please correct the highlighted fields.');
+                    return { ok: false };
+                });
+            }).catch(function () {
+                Swal.showValidationMessage('An error occurred. Please try again.');
+                return { ok: false };
+            });
+        }
+    }).then(function (result) {
+        if (result.isConfirmed && result.value && result.value.ok) {
+            var data = result.value.data || {};
+            toastr.success(data.message || 'Saved successfully.');
+            refreshCurrentGrid();
+        }
+    });
 }
 
 // Active/Inactive badge — use as a column `render`: { data: 'isActive', render: activeBadge }

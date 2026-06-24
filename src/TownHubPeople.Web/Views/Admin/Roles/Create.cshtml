@@ -1,8 +1,6 @@
 @model TownHubPeople.Web.ViewModels.Admin.CreateRoleViewModel
 @{
     ViewData["Title"] = "Create Role";
-    var existingRoles = ViewBag.ExistingRoles as List<string> ?? [];
-    var presets = ViewBag.AvailablePresets as string[] ?? [];
 }
 
 @await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
@@ -13,56 +11,7 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-body">
-                <form asp-action="Create" method="post">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Name" class="form-label"></label>
-                            <input asp-for="Name" class="form-control" />
-                            <span asp-validation-for="Name" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <label asp-for="Description" class="form-label"></label>
-                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-                            <span asp-validation-for="Description" class="text-danger small"></span>
-                        </div>
-                    </div>
-
-                    <hr class="my-3" />
-                    <h6 class="text-muted mb-3"><i class="fas fa-shield-alt me-2"></i>Initial Permissions <span class="badge bg-light text-muted ms-1" style="font-size:0.7rem;">optional</span></h6>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="CopyFromRole" class="form-label">Copy permissions from role</label>
-                            <select asp-for="CopyFromRole" class="form-select" id="copyFromSelect">
-                                <option value="">— None (start with no access) —</option>
-                                @foreach (var r in existingRoles)
-                                {
-                                    <option value="@r">@r</option>
-                                }
-                            </select>
-                            <div class="form-text">New role inherits all module and tab access from the selected role.</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="ApplyPreset" class="form-label">Or apply a preset</label>
-                            <select asp-for="ApplyPreset" class="form-select" id="presetSelect">
-                                <option value="">— None —</option>
-                                @foreach (var p in presets)
-                                {
-                                    <option value="@p">@p</option>
-                                }
-                            </select>
-                            <div class="form-text">Ignored if "Copy from role" is selected.</div>
-                        </div>
-                    </div>
-                    <div class="alert alert-info py-2 small d-none" id="permissionHint">
-                        <i class="fas fa-info-circle me-1"></i>
-                        You can always fine-tune permissions later via <strong>Menu Config</strong>.
-                    </div>
-
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
-                        <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
-                    </div>
-                </form>
+                @await Html.PartialAsync("_CreateForm", Model)
             </div>
         </div>
     </div>
@@ -72,24 +21,7 @@
 </div>
 
 @section Scripts {
-<script>
-var copySelect  = document.getElementById('copyFromSelect');
-var presetSelect = document.getElementById('presetSelect');
-var hint = document.getElementById('permissionHint');
-
-function updateHint() {
-    var hasSelection = copySelect.value || presetSelect.value;
-    hint.classList.toggle('d-none', !hasSelection);
-    // If copy-from is set, disable preset; if preset is set, disable copy-from
-    presetSelect.disabled = !!copySelect.value;
-    copySelect.disabled  = !!(presetSelect.value && !copySelect.value);
-    // Re-enable the one we just cleared
-    if (!copySelect.value && !presetSelect.value) {
-        copySelect.disabled = false;
-        presetSelect.disabled = false;
-    }
-}
-copySelect.addEventListener('change', updateHint);
-presetSelect.addEventListener('change', updateHint);
-</script>
+    <script>
+        initFormModalPlugins(document);
+    </script>
 }

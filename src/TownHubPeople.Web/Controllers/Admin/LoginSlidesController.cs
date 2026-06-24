@@ -24,6 +24,33 @@ public class LoginSlidesController : BaseController
         _webHostEnvironment = webHostEnvironment;
     }
 
+    // AJAX-aware result helpers (see UsersController for the convention).
+    private IActionResult InvalidCreate(LoginSlideViewModel model)
+    {
+        if (IsAjax()) { Response.StatusCode = 400; return PartialView($"{ViewPath}/_CreateForm.cshtml", model); }
+        return View($"{ViewPath}/Create.cshtml", model);
+    }
+
+    private IActionResult InvalidEdit(LoginSlideViewModel model)
+    {
+        if (IsAjax()) { Response.StatusCode = 400; return PartialView($"{ViewPath}/_EditForm.cshtml", model); }
+        return View($"{ViewPath}/Edit.cshtml", model);
+    }
+
+    private IActionResult Saved(string message)
+    {
+        if (IsAjax()) return Json(new { success = true, message });
+        SuccessNotification(message);
+        return RedirectToAction(nameof(Index));
+    }
+
+    private IActionResult RecordMissing(string message)
+    {
+        if (IsAjax()) return Json(new { success = false, message });
+        ErrorNotification(message);
+        return RedirectToAction(nameof(Index));
+    }
+
     [Route("")]
     public IActionResult Index()
     {
@@ -45,6 +72,8 @@ public class LoginSlidesController : BaseController
     [Route("Create")]
     public IActionResult Create()
     {
+        if (IsAjax())
+            return PartialView($"{ViewPath}/_CreateForm.cshtml", new LoginSlideViewModel());
         return View($"{ViewPath}/Create.cshtml", new LoginSlideViewModel());
     }
 
@@ -54,7 +83,7 @@ public class LoginSlidesController : BaseController
     public async Task<IActionResult> Create(LoginSlideViewModel model, IFormFile? image)
     {
         if (!ModelState.IsValid)
-            return View($"{ViewPath}/Create.cshtml", model);
+            return InvalidCreate(model);
 
         var entity = new LoginPageSlide
         {
@@ -74,7 +103,7 @@ public class LoginSlidesController : BaseController
             if (!valid)
             {
                 ModelState.AddModelError("image", errorMessage!);
-                return View($"{ViewPath}/Create.cshtml", model);
+                return InvalidCreate(model);
             }
 
             entity.ImageFileName = await SaveImageAsync(image);
@@ -83,8 +112,7 @@ public class LoginSlidesController : BaseController
         _unitOfWork.Repository<LoginPageSlide>().Add(entity);
         await _unitOfWork.SaveChangesAsync();
 
-        SuccessNotification("Login slide created successfully.");
-        return RedirectToAction(nameof(Index));
+        return Saved("Login slide created successfully.");
     }
 
     [Route("Edit/{id:int}")]
@@ -92,10 +120,7 @@ public class LoginSlidesController : BaseController
     {
         var entity = await _unitOfWork.Repository<LoginPageSlide>().GetByIdAsync(id);
         if (entity is null)
-        {
-            ErrorNotification("Login slide not found.");
-            return RedirectToAction(nameof(Index));
-        }
+            return RecordMissing("Login slide not found.");
 
         var model = new LoginSlideViewModel
         {
@@ -111,6 +136,8 @@ public class LoginSlidesController : BaseController
             ExistingImageFileName = entity.ImageFileName
         };
 
+        if (IsAjax())
+            return PartialView($"{ViewPath}/_EditForm.cshtml", model);
         return View($"{ViewPath}/Edit.cshtml", model);
     }
 
@@ -120,14 +147,11 @@ public class LoginSlidesController : BaseController
     public async Task<IActionResult> Edit(int id, LoginSlideViewModel model, IFormFile? image)
     {
         if (!ModelState.IsValid)
-            return View($"{ViewPath}/Edit.cshtml", model);
+            return InvalidEdit(model);
 
         var entity = await _unitOfWork.Repository<LoginPageSlide>().GetByIdAsync(id);
         if (entity is null)
-        {
-            ErrorNotification("Login slide not found.");
-            return RedirectToAction(nameof(Index));
-        }
+            return RecordMissing("Login slide not found.");
 
         entity.Title = model.Title;
         entity.Description = model.Description;
@@ -145,7 +169,7 @@ public class LoginSlidesController : BaseController
             {
                 model.ExistingImageFileName = entity.ImageFileName;
                 ModelState.AddModelError("image", errorMessage!);
-                return View($"{ViewPath}/Edit.cshtml", model);
+                return InvalidEdit(model);
             }
 
             // Delete old image if it exists
@@ -158,8 +182,7 @@ public class LoginSlidesController : BaseController
         _unitOfWork.Repository<LoginPageSlide>().Update(entity);
         await _unitOfWork.SaveChangesAsync();
 
-        SuccessNotification("Login slide updated successfully.");
-        return RedirectToAction(nameof(Index));
+        return Saved("Login slide updated successfully.");
     }
 
     [HttpPost]
