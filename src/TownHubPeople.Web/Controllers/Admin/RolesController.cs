@@ -29,6 +29,37 @@ public class RolesController : BaseController
         _menuConfigService = menuConfigService;
     }
 
+    // AJAX-aware result helpers (see UsersController for the convention). InvalidCreate
+    // re-populates the dropdown data the create partial needs.
+    private async Task<IActionResult> InvalidCreate(CreateRoleViewModel model)
+    {
+        ViewBag.ExistingRoles = await _roleManager.Roles.Select(r => r.Name!).OrderBy(r => r).ToListAsync();
+        ViewBag.AvailablePresets = AvailablePresets;
+        if (IsAjax()) { Response.StatusCode = 400; return PartialView($"{ViewPath}/_CreateForm.cshtml", model); }
+        return View($"{ViewPath}/Create.cshtml", model);
+    }
+
+    private IActionResult InvalidEdit(string id, CreateRoleViewModel model)
+    {
+        ViewBag.Id = id;
+        if (IsAjax()) { Response.StatusCode = 400; return PartialView($"{ViewPath}/_EditForm.cshtml", model); }
+        return View($"{ViewPath}/Edit.cshtml", model);
+    }
+
+    private IActionResult Saved(string message)
+    {
+        if (IsAjax()) return Json(new { success = true, message });
+        SuccessNotification(message);
+        return RedirectToAction(nameof(Index));
+    }
+
+    private IActionResult RecordMissing(string message)
+    {
+        if (IsAjax()) return Json(new { success = false, message });
+        ErrorNotification(message);
+        return RedirectToAction(nameof(Index));
+    }
+
     [Route("")]
     public IActionResult Index()
     {
@@ -102,6 +133,8 @@ public class RolesController : BaseController
     {
         ViewBag.ExistingRoles = await _roleManager.Roles.Select(r => r.Name!).OrderBy(r => r).ToListAsync();
         ViewBag.AvailablePresets = AvailablePresets;
+        if (IsAjax())
+            return PartialView($"{ViewPath}/_CreateForm.cshtml", new CreateRoleViewModel());
         return View($"{ViewPath}/Create.cshtml", new CreateRoleViewModel());
     }
 
@@ -111,19 +144,13 @@ public class RolesController : BaseController
     public async Task<IActionResult> Create(CreateRoleViewModel model)
     {
         if (!ModelState.IsValid)
-        {
-            ViewBag.ExistingRoles = await _roleManager.Roles.Select(r => r.Name!).OrderBy(r => r).ToListAsync();
-            ViewBag.AvailablePresets = AvailablePresets;
-            return View($"{ViewPath}/Create.cshtml", model);
-        }
+            return await InvalidCreate(model);
 
         var exists = await _roleManager.RoleExistsAsync(model.Name);
         if (exists)
         {
-            ErrorNotification("A role with this name already exists.");
-            ViewBag.ExistingRoles = await _roleManager.Roles.Select(r => r.Name!).OrderBy(r => r).ToListAsync();
-            ViewBag.AvailablePresets = AvailablePresets;
-            return View($"{ViewPath}/Create.cshtml", model);
+            ModelState.AddModelError(nameof(model.Name), "A role with this name already exists.");
+            return await InvalidCreate(model);
         }
 
         var role = new ApplicationRole
@@ -138,9 +165,7 @@ public class RolesController : BaseController
         {
             foreach (var error in result.Errors)
                 ModelState.AddModelError(string.Empty, error.Description);
-            ViewBag.ExistingRoles = await _roleManager.Roles.Select(r => r.Name!).OrderBy(r => r).ToListAsync();
-            ViewBag.AvailablePresets = AvailablePresets;
-            return View($"{ViewPath}/Create.cshtml", model);
+            return await InvalidCreate(model);
         }
 
         // Apply permissions from source role or preset
@@ -155,8 +180,7 @@ public class RolesController : BaseController
                 ? $"Role created with \"{model.ApplyPreset}\" preset applied."
                 : "Role created. Use Menu Config to assign access.";
 
-        SuccessNotification(msg);
-        return RedirectToAction(nameof(Index));
+        return Saved(msg);
     }
 
     [Route("Edit/{id}")]
@@ -164,10 +188,7 @@ public class RolesController : BaseController
     {
         var role = await _roleManager.FindByIdAsync(id);
         if (role is null)
-        {
-            ErrorNotification("Role not found.");
-            return RedirectToAction(nameof(Index));
-        }
+            return RecordMissing("Role not found.");
 
         var model = new CreateRoleViewModel
         {
@@ -176,6 +197,8 @@ public class RolesController : BaseController
         };
 
         ViewBag.Id = id;
+        if (IsAjax())
+            return PartialView($"{ViewPath}/_EditForm.cshtml", model);
         return View($"{ViewPath}/Edit.cshtml", model);
     }
 
@@ -185,24 +208,17 @@ public class RolesController : BaseController
     public async Task<IActionResult> Edit(string id, CreateRoleViewModel model)
     {
         if (!ModelState.IsValid)
-        {
-            ViewBag.Id = id;
-            return View($"{ViewPath}/Edit.cshtml", model);
-        }
+            return InvalidEdit(id, model);
 
         var role = await _roleManager.FindByIdAsync(id);
         if (role is null)
-        {
-            ErrorNotification("Role not found.");
-            return RedirectToAction(nameof(Index));
-        }
+            return RecordMissing("Role not found.");
 
         var duplicate = await _roleManager.Roles.AnyAsync(r => r.Name == model.Name && r.Id != id);
         if (duplicate)
         {
-            ErrorNotification("A role with this name already exists.");
-            ViewBag.Id = id;
-            return View($"{ViewPath}/Edit.cshtml", model);
+            ModelState.AddModelError(nameof(model.Name), "A role with this name already exists.");
+            return InvalidEdit(id, model);
         }
 
         role.Name = model.Name;
@@ -213,12 +229,10 @@ public class RolesController : BaseController
         {
             foreach (var error in result.Errors)
                 ModelState.AddModelError(string.Empty, error.Description);
-            ViewBag.Id = id;
-            return View($"{ViewPath}/Edit.cshtml", model);
+            return InvalidEdit(id, model);
         }
 
-        SuccessNotification("Role updated successfully.");
-        return RedirectToAction(nameof(Index));
+        return Saved("Role updated successfully.");
     }
 
     [HttpPost]

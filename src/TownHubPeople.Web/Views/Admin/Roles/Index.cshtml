@@ -5,9 +5,9 @@
 @await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
 
 <erp-page-header module="Administration" item="Roles">
-    <a asp-action="Create" class="btn btn-primary btn-sm">
+    <button type="button" class="btn btn-primary btn-sm" data-form-url="@Url.Action("Create")" data-form-title="Add Role">
         <i class="fas fa-plus me-1"></i>Add Role
-    </a>
+    </button>
 </erp-page-header>
 
 <div class="card">
@@ -35,7 +35,7 @@
         { data: 'userCount', render: function(data) { return '<span class="badge bg-primary">' + data + '</span>'; } },
         { data: 'createdDate', render: function(data) { return new Date(data).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } },
         { data: 'id', orderable: false, render: function(data, type, row) {
-            var html = '<a href="/Admin/Roles/Edit/' + data + '" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></a>';
+            var html = '<button type="button" class="btn btn-sm btn-outline-primary me-1" data-form-url="/Admin/Roles/Edit/' + data + '" data-form-title="Edit Role"><i class="fas fa-edit"></i></button>';
             if (row.userCount === 0) {
                 html += '<button class="btn btn-sm btn-outline-danger" data-delete-url="/Admin/Roles/Delete/' + data + '"><i class="fas fa-trash"></i></button>';
             }

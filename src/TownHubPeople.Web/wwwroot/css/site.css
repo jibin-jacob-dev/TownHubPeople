@@ -229,9 +229,8 @@ html, body {
 
 #sidebar-wrapper .sidebar-section-label {
     font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     color: var(--text-muted);
     padding: 0.875rem 1.75rem 0.25rem;
     white-space: nowrap;
@@ -1008,7 +1007,7 @@ html, body {
 .card {
     border-radius: 0.5rem;
     border: 1px solid var(--border-color);
-    box-shadow: 0 1px 2px var(--card-shadow);
+    box-shadow: none; /* flat: rely on the border, not a drop shadow */
     background-color: var(--card-bg);
 }
 
@@ -1022,8 +1021,6 @@ html, body {
     background: var(--card-bg);
     font-weight: 600;
     font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
     color: var(--text-secondary);
     border-bottom-width: 1px;
     position: sticky;
@@ -2973,3 +2970,30 @@ span.flatpickr-weekday {
 
 [data-theme="light"] .logo-dark { display: none !important; }
 [data-theme="dark"] .logo-light { display: none !important; }
+
+/* ── SweetAlert2 popup forms (Create/Edit) ───────────────── */
+
+/* Forms are left-aligned and roomier than a default Swal. */
+.swal-form-container {
+    text-align: left;
+    margin: 1rem 0 0;
+    max-height: calc(100vh - 14rem);
+    overflow-y: auto;
+}
+
+.swal-form-loading {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 1.5rem 0;
+}
+
+/* The partial keeps its own submit/cancel row for the full-page fallback;
+   inside the popup, Swal supplies the action buttons, so hide the form's. */
+.swal-form-popup .form-actions {
+    display: none;
+}
+
+/* select2's dropdown must sit above the Swal popup (z-index 1060+). */
+.swal2-container .select2-container {
+    z-index: 2000;
+}

@@ -5,9 +5,9 @@
 @await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Administration" })
 
 <erp-page-header module="Administration" item="Login Slides">
-    <a asp-action="Create" class="btn btn-primary btn-sm">
+    <button type="button" class="btn btn-primary btn-sm" data-form-url="@Url.Action("Create")" data-form-title="Add Slide">
         <i class="fas fa-plus me-1"></i>Add Slide
-    </a>
+    </button>
 </erp-page-header>
 
 @Html.AntiForgeryToken()
@@ -111,7 +111,7 @@
                     '<div class="slide-item-badges">' + badges + '</div>' +
                 '</div>' +
                 '<div class="slide-item-actions">' +
-                    '<a href="/Admin/LoginSlides/Edit/' + s.id + '" class="slide-item-btn slide-item-btn-edit" title="Edit"><i class="fas fa-pen"></i></a>' +
+                    '<button type="button" class="slide-item-btn slide-item-btn-edit" data-form-url="/Admin/LoginSlides/Edit/' + s.id + '" data-form-title="Edit Slide" title="Edit"><i class="fas fa-pen"></i></button>' +
                     '<button class="slide-item-btn slide-item-btn-delete" data-delete-url="/Admin/LoginSlides/Delete/' + s.id + '" title="Delete"><i class="fas fa-trash"></i></button>' +
                 '</div>' +
             '</div>';
@@ -143,6 +143,9 @@
             }
         });
     }
+
+    // Lets the popup form engine refresh this custom (non-DataTable) list after a save.
+    window.refreshGrid = loadSlides;
 
     loadSlides();
 
