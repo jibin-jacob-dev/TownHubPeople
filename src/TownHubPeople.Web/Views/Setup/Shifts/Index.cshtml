@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "Shifts";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Setup" })
+
+<erp-page-header module="Workforce Setup" item="Shifts">
+    <button type="button" class="btn btn-primary btn-sm" data-form-url="@Url.Action("Create")" data-form-title="Add Shift">
+        <i class="fas fa-plus me-1"></i>Add Shift
+    </button>
+</erp-page-header>
+
+<div class="card">
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <table id="dataTable" class="table table-striped table-hover" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Active</th>
+                    <th width="90">Actions</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var table = initDataTable('dataTable', '@Url.Action("GetData")', [
+        { data: 'name' },
+        { data: 'code' },
+        { data: 'startTime' },
+        { data: 'endTime' },
+        { data: 'isActive', render: activeBadge },
+        actionsColumn({ edit: '/Setup/Shifts/Edit', editModal: true, editTitle: 'Edit Shift', del: '/Setup/Shifts/Delete' })
+    ]);
+</script>
+}

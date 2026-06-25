@@ -1,0 +1,42 @@
+@model TownHubPeople.Domain.Entities.Workforce.HolidayCalendar
+@{
+    ViewData["Title"] = $"{Model.Name} — Holidays";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Setup" })
+
+<erp-page-header module="Workforce Setup" item="Holiday Calendars" action="@($"{Model.Name} ({Model.Year})")">
+    <span>
+        <button type="button" class="btn btn-primary btn-sm" data-form-url="/Setup/Holidays/Create?calendarId=@Model.Id" data-form-title="Add Holiday">
+            <i class="fas fa-plus me-1"></i>Add Holiday
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm ms-2"><i class="fas fa-arrow-left me-1"></i>Back</a>
+    </span>
+</erp-page-header>
+
+<div class="card">
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <table id="dataTable" class="table table-striped table-hover" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Optional</th>
+                    <th width="90">Actions</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var table = initDataTable('dataTable', '/Setup/Holidays/GetData?calendarId=@Model.Id', [
+        { data: 'date', render: function (d) { return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''; } },
+        { data: 'name' },
+        { data: 'isOptional', render: function (d) { return d ? '<span class="badge bg-info">Optional</span>' : '<span class="text-muted">-</span>'; } },
+        actionsColumn({ edit: '/Setup/Holidays/Edit', editModal: true, editTitle: 'Edit Holiday', del: '/Setup/Holidays/Delete' })
+    ], { order: [[0, 'asc']] });
+</script>
+}

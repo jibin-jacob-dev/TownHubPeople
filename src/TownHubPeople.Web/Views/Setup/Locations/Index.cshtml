@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "Locations";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Setup" })
+
+<erp-page-header module="Workforce Setup" item="Locations">
+    <button type="button" class="btn btn-primary btn-sm" data-form-url="@Url.Action("Create")" data-form-title="Add Location">
+        <i class="fas fa-plus me-1"></i>Add Location
+    </button>
+</erp-page-header>
+
+<div class="card">
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <table id="dataTable" class="table table-striped table-hover" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>City</th>
+                    <th>Country</th>
+                    <th>Active</th>
+                    <th width="90">Actions</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var table = initDataTable('dataTable', '@Url.Action("GetData")', [
+        { data: 'name' },
+        { data: 'code' },
+        { data: 'city', render: function (d) { return d || '<span class="text-muted">-</span>'; } },
+        { data: 'country', render: function (d) { return d || '<span class="text-muted">-</span>'; } },
+        { data: 'isActive', render: activeBadge },
+        actionsColumn({ edit: '/Setup/Locations/Edit', editModal: true, editTitle: 'Edit Location', del: '/Setup/Locations/Delete' })
+    ]);
+</script>
+}

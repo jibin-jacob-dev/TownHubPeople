@@ -1,0 +1,31 @@
+@model TownHubPeople.Web.ViewModels.Setup.HolidayViewModel
+@{
+    var isEdit = Model.Id != 0;
+}
+
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.Id : (int?)null)" method="post">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="HolidayCalendarId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="row">
+        <div class="col-md-5 mb-3">
+            <label asp-for="Date" class="form-label"></label>
+            <input asp-for="Date" type="date" class="form-control" />
+            <span asp-validation-for="Date" class="text-danger small"></span>
+        </div>
+        <div class="col-md-7 mb-3">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+        <div class="col-md-12 mb-3">
+            <div class="form-check mt-2">
+                <input asp-for="IsOptional" class="form-check-input" />
+                <label asp-for="IsOptional" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+    <div class="form-actions mt-3">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+    </div>
+</form>
