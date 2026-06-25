@@ -1,0 +1,20 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace TownHubPeople.Web.ViewModels.Setup;
+
+public class CostCenterViewModel
+{
+    public int Id { get; set; }
+
+    [Required, MaxLength(150)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, MaxLength(30)]
+    public string Code { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? Description { get; set; }
+
+    [Display(Name = "Active")]
+    public bool IsActive { get; set; } = true;
+}

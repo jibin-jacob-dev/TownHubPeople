@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "Designations";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "Setup" })
+
+<erp-page-header module="Workforce Setup" item="Designations">
+    <button type="button" class="btn btn-primary btn-sm" data-form-url="@Url.Action("Create")" data-form-title="Add Designation">
+        <i class="fas fa-plus me-1"></i>Add Designation
+    </button>
+</erp-page-header>
+
+<div class="card">
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <table id="dataTable" class="table table-striped table-hover" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Grade</th>
+                    <th>Active</th>
+                    <th width="90">Actions</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var table = initDataTable('dataTable', '@Url.Action("GetData")', [
+        { data: 'name' },
+        { data: 'code' },
+        { data: 'grade', render: function (d) { return d || '<span class="text-muted">-</span>'; } },
+        { data: 'isActive', render: activeBadge },
+        actionsColumn({ edit: '/Setup/Designations/Edit', editModal: true, editTitle: 'Edit Designation', del: '/Setup/Designations/Delete' })
+    ]);
+</script>
+}

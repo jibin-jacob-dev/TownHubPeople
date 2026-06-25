@@ -1,0 +1,52 @@
+@model TownHubPeople.Web.ViewModels.Setup.ShiftViewModel
+@{
+    var isEdit = Model.Id != 0;
+}
+
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.Id : (int?)null)" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="row">
+        <div class="col-md-8 mb-3">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="Code" class="form-label"></label>
+            <input asp-for="Code" class="form-control" />
+            <span asp-validation-for="Code" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="StartTime" class="form-label"></label>
+            <input asp-for="StartTime" type="time" class="form-control" />
+            <span asp-validation-for="StartTime" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="EndTime" class="form-label"></label>
+            <input asp-for="EndTime" type="time" class="form-control" />
+            <span asp-validation-for="EndTime" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="BreakMinutes" class="form-label"></label>
+            <input asp-for="BreakMinutes" type="number" class="form-control" />
+            <span asp-validation-for="BreakMinutes" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="form-check mt-4">
+                <input asp-for="IsNightShift" class="form-check-input" />
+                <label asp-for="IsNightShift" class="form-check-label"></label>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="form-check mt-4">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+    <div class="form-actions mt-3">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+        <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+</form>

@@ -17,6 +17,7 @@ public static class SystemMenuItems
     public static readonly List<MenuItemDefinition> All =
     [
         new("Dashboard", "Dashboard", "fa-tachometer-alt", "/", "#60a5fa", 1, "/Home", "module-dashboard"),
+        new("Setup", "Workforce Setup", "fa-sitemap", "/Setup/Departments", "#14b8a6", 2, "/Setup", "module-hr"),
         new("Administration", "Administration", "fa-shield-alt", "/Admin/Users", "#f43f5e", 9, "/Admin", "module-admin"),
     ];
 }

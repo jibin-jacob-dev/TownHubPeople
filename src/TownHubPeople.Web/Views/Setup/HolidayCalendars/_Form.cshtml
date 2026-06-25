@@ -1,0 +1,37 @@
+@model TownHubPeople.Web.ViewModels.Setup.HolidayCalendarViewModel
+@{
+    var isEdit = Model.Id != 0;
+}
+
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.Id : (int?)null)" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="row">
+        <div class="col-md-7 mb-3">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+        <div class="col-md-5 mb-3">
+            <label asp-for="Year" class="form-label"></label>
+            <input asp-for="Year" type="number" class="form-control" />
+            <span asp-validation-for="Year" class="text-danger small"></span>
+        </div>
+        <div class="col-md-7 mb-3">
+            <label asp-for="LocationId" class="form-label"></label>
+            <select asp-for="LocationId" class="js-select2" data-placeholder="— Any location —" asp-items="Model.AvailableLocations">
+                <option value="">— Any location —</option>
+            </select>
+        </div>
+        <div class="col-md-5 mb-3">
+            <div class="form-check mt-4">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+        </div>
+    </div>
+    <div class="form-actions mt-3">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+        <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+</form>

@@ -14,12 +14,14 @@ public static class MenuConfigSeed
     private static readonly Dictionary<string, string[]> DefaultMenuRoles = new()
     {
         ["Dashboard"]      = ["Administrator", "HRManager", "Recruiter", "PayrollManager", "LineManager", "Employee", "Viewer"],
+        ["Setup"]          = ["Administrator", "HRManager"],
         ["Administration"] = ["Administrator"],
     };
 
     // Default tab grants per module (Administrator handled separately via EnsureAdminFullAccessAsync).
     private static readonly Dictionary<string, string[]> DefaultTabRoles = new()
     {
+        ["Setup"]          = ["Administrator", "HRManager"],
         ["Administration"] = ["Administrator"],
     };
 
