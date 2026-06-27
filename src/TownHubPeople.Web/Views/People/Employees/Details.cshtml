@@ -1,0 +1,89 @@
+@model TownHubPeople.Domain.Entities.People.Employee
+@using TownHubPeople.Domain.Enums
+@{
+    ViewData["Title"] = Model.FullName;
+    var statusClass = Model.Status switch
+    {
+        EmploymentStatus.Active => "bg-success",
+        EmploymentStatus.Probation => "bg-info",
+        EmploymentStatus.OnLeave => "bg-warning",
+        EmploymentStatus.Suspended => "bg-secondary",
+        EmploymentStatus.Exited => "bg-danger",
+        _ => "bg-secondary"
+    };
+    var initials = $"{(Model.FirstName.Length > 0 ? Model.FirstName[0] : ' ')}{(Model.LastName.Length > 0 ? Model.LastName[0] : ' ')}".Trim().ToUpper();
+    string Date(DateOnly? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy") : "—";
+}
+
+@await Component.InvokeAsync("ModuleTabs", new { moduleKey = "People" })
+
+<erp-page-header module="People" item="Employees" action="@Model.FullName">
+    <span>
+        <button type="button" class="btn btn-primary btn-sm" data-form-url="/People/Employees/Edit/@Model.Id" data-form-title="Edit Employee">
+            <i class="fas fa-edit me-1"></i>Edit
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm ms-2"><i class="fas fa-arrow-left me-1"></i>Back</a>
+    </span>
+</erp-page-header>
+
+<div class="card mb-3">
+    <div class="card-body d-flex align-items-center gap-3">
+        <div class="user-avatar user-avatar-lg" aria-hidden="true">@initials</div>
+        <div>
+            <h5 class="mb-1">@Model.FullName <span class="badge @statusClass ms-2">@Model.Status</span></h5>
+            <div class="text-muted">
+                <span class="me-3"><i class="fas fa-hashtag fa-fw"></i> @Model.EmployeeCode</span>
+                <span class="me-3"><i class="fas fa-briefcase fa-fw"></i> @(Model.Designation?.Name ?? "—")</span>
+                <span><i class="fas fa-building fa-fw"></i> @(Model.Department?.Name ?? "—")</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav section-tabs mb-3" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab"><i class="fas fa-briefcase"></i> Overview</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-personal" type="button" role="tab"><i class="fas fa-user"></i> Personal</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-comp" type="button" role="tab"><i class="fas fa-money-bill-wave"></i> Compensation</button></li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-overview" role="tabpanel">
+        <div class="card"><div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4"><div class="text-muted small">Department</div><div>@(Model.Department?.Name ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Designation</div><div>@(Model.Designation?.Name ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Grade</div><div>@(Model.Grade?.Name ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Location</div><div>@(Model.Location?.Name ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Employment Type</div><div>@(Model.EmploymentType?.Name ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Cost Center</div><div>@(Model.CostCenter?.Name ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Reporting Manager</div><div>@(Model.Manager?.FullName ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Date of Joining</div><div>@Date(Model.DateOfJoining)</div></div>
+                <div class="col-md-4"><div class="text-muted small">Date of Confirmation</div><div>@Date(Model.DateOfConfirmation)</div></div>
+                <div class="col-md-4"><div class="text-muted small">Probation End</div><div>@Date(Model.ProbationEndDate)</div></div>
+                <div class="col-md-4"><div class="text-muted small">Login Account</div><div>@(Model.User != null ? Model.User.Email : "Not linked")</div></div>
+            </div>
+        </div></div>
+    </div>
+
+    <div class="tab-pane fade" id="tab-personal" role="tabpanel">
+        <div class="card"><div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4"><div class="text-muted small">Full Name</div><div>@Model.FullName</div></div>
+                <div class="col-md-4"><div class="text-muted small">Gender</div><div>@(Model.Gender ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Date of Birth</div><div>@Date(Model.DateOfBirth)</div></div>
+                <div class="col-md-4"><div class="text-muted small">Work Email</div><div>@(Model.WorkEmail ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Personal Email</div><div>@(Model.PersonalEmail ?? "—")</div></div>
+                <div class="col-md-4"><div class="text-muted small">Phone</div><div>@(Model.Phone ?? "—")</div></div>
+            </div>
+        </div></div>
+    </div>
+
+    <div class="tab-pane fade" id="tab-comp" role="tabpanel">
+        <div class="card"><div class="card-body text-center text-muted py-5">
+            <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+            <p class="mb-0">Compensation details arrive with the Payroll module.</p>
+        </div></div>
+    </div>
+</div>
+
+@await Html.PartialAsync("_HistoryPanel", (EntityName: "Employee", EntityId: Model.Id.ToString()))

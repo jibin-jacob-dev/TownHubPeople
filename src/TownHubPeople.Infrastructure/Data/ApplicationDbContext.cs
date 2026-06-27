@@ -6,6 +6,7 @@ using TownHubPeople.Domain.Common;
 using TownHubPeople.Domain.Entities.Identity;
 using TownHubPeople.Domain.Entities.Admin;
 using TownHubPeople.Domain.Entities.Workforce;
+using TownHubPeople.Domain.Entities.People;
 
 namespace TownHubPeople.Infrastructure.Data;
 
@@ -34,6 +35,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<HolidayCalendar> HolidayCalendars => Set<HolidayCalendar>();
     public DbSet<Holiday> Holidays => Set<Holiday>();
     public DbSet<Skill> Skills => Set<Skill>();
+
+    // People
+    public DbSet<Employee> Employees => Set<Employee>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

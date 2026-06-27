@@ -15,6 +15,7 @@ public static class MenuConfigSeed
     {
         ["Dashboard"]      = ["Administrator", "HRManager", "Recruiter", "PayrollManager", "LineManager", "Employee", "Viewer"],
         ["Setup"]          = ["Administrator", "HRManager"],
+        ["People"]         = ["Administrator", "HRManager", "LineManager"],
         ["Administration"] = ["Administrator"],
     };
 
@@ -22,6 +23,7 @@ public static class MenuConfigSeed
     private static readonly Dictionary<string, string[]> DefaultTabRoles = new()
     {
         ["Setup"]          = ["Administrator", "HRManager"],
+        ["People"]         = ["Administrator", "HRManager", "LineManager"],
         ["Administration"] = ["Administrator"],
     };
 
