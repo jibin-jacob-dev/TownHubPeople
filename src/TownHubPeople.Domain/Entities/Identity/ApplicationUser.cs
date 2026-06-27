@@ -11,5 +11,5 @@ public class ApplicationUser : IdentityUser
     public DateTime CreatedDate { get; set; }
     public string? ProfileImageUrl { get; set; }
 
-    // NOTE: Employee navigation re-added when the HR domain is built.
+    public Entities.People.Employee? Employee { get; set; }
 }

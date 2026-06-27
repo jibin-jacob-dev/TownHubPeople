@@ -26,6 +26,9 @@ public static class SystemTabItems
         new("Setup", "HolidayCalendars", "Holiday Calendars", "fa-calendar-day", "#fb923c", "/Setup/HolidayCalendars", "/setup/holidaycalendars", 8),
         new("Setup", "Skills", "Skills", "fa-lightbulb", "#22c55e", "/Setup/Skills", "/setup/skills", 9),
 
+        // People
+        new("People", "Employees", "Employees", "fa-id-card", "#6366f1", "/People/Employees", "/people/employees", 1),
+
         // Administration
         new("Administration", "Users", "Users", "fa-users", "#0ea5e9", "/Admin/Users", "/admin/users", 1),
         new("Administration", "Roles", "Roles", "fa-user-shield", "#8b5cf6", "/Admin/Roles", "/admin/roles", 2),

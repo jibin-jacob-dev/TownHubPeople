@@ -1,0 +1,144 @@
+@model TownHubPeople.Web.ViewModels.People.EmployeeFormViewModel
+@{
+    var isEdit = Model.Id != 0;
+}
+
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.Id : (int?)null)" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <h6 class="text-muted mb-2"><i class="fas fa-user me-2"></i>Personal</h6>
+    <div class="row">
+        @if (isEdit)
+        {
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Employee Code</label>
+                <input value="@Model.EmployeeCode" class="form-control" readonly />
+            </div>
+        }
+        <div class="col-md-4 mb-3">
+            <label asp-for="FirstName" class="form-label"></label>
+            <input asp-for="FirstName" class="form-control" />
+            <span asp-validation-for="FirstName" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="MiddleName" class="form-label"></label>
+            <input asp-for="MiddleName" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="LastName" class="form-label"></label>
+            <input asp-for="LastName" class="form-control" />
+            <span asp-validation-for="LastName" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="Gender" class="form-label"></label>
+            <select asp-for="Gender" class="form-select">
+                <option value="">—</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="DateOfBirth" class="form-label"></label>
+            <input asp-for="DateOfBirth" type="date" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="WorkEmail" class="form-label"></label>
+            <input asp-for="WorkEmail" type="email" class="form-control" />
+            <span asp-validation-for="WorkEmail" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="PersonalEmail" class="form-label"></label>
+            <input asp-for="PersonalEmail" type="email" class="form-control" />
+            <span asp-validation-for="PersonalEmail" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="Phone" class="form-label"></label>
+            <input asp-for="Phone" class="form-control" />
+        </div>
+    </div>
+
+    <hr class="my-2" />
+    <h6 class="text-muted mb-2"><i class="fas fa-briefcase me-2"></i>Job</h6>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label asp-for="DepartmentId" class="form-label"></label>
+            <select asp-for="DepartmentId" class="js-select2" data-placeholder="Select department…" asp-items="Model.AvailableDepartments">
+                <option value="">—</option>
+            </select>
+            <span asp-validation-for="DepartmentId" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="DesignationId" class="form-label"></label>
+            <select asp-for="DesignationId" class="js-select2" data-placeholder="Select designation…" asp-items="Model.AvailableDesignations">
+                <option value="">—</option>
+            </select>
+            <span asp-validation-for="DesignationId" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="GradeId" class="form-label"></label>
+            <select asp-for="GradeId" class="js-select2" data-placeholder="— None —" asp-items="Model.AvailableGrades">
+                <option value="">— None —</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="LocationId" class="form-label"></label>
+            <select asp-for="LocationId" class="js-select2" data-placeholder="— None —" asp-items="Model.AvailableLocations">
+                <option value="">— None —</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="EmploymentTypeId" class="form-label"></label>
+            <select asp-for="EmploymentTypeId" class="js-select2" data-placeholder="— None —" asp-items="Model.AvailableEmploymentTypes">
+                <option value="">— None —</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="CostCenterId" class="form-label"></label>
+            <select asp-for="CostCenterId" class="js-select2" data-placeholder="— None —" asp-items="Model.AvailableCostCenters">
+                <option value="">— None —</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="ManagerId" class="form-label"></label>
+            <select asp-for="ManagerId" class="js-select2" data-placeholder="— None —" asp-items="Model.AvailableManagers">
+                <option value="">— None —</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="Status" class="form-label"></label>
+            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<TownHubPeople.Domain.Enums.EmploymentStatus>()"></select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="DateOfJoining" class="form-label"></label>
+            <input asp-for="DateOfJoining" type="date" class="form-control" />
+            <span asp-validation-for="DateOfJoining" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="DateOfConfirmation" class="form-label"></label>
+            <input asp-for="DateOfConfirmation" type="date" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="ProbationEndDate" class="form-label"></label>
+            <input asp-for="ProbationEndDate" type="date" class="form-control" />
+        </div>
+    </div>
+
+    <hr class="my-2" />
+    <h6 class="text-muted mb-2"><i class="fas fa-key me-2"></i>Login Account <span class="badge bg-light text-muted ms-1" style="font-size:0.7rem;">optional</span></h6>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="UserId" class="form-label"></label>
+            <select asp-for="UserId" class="js-select2" data-placeholder="— No login linked —" asp-items="Model.AvailableUsers">
+                <option value="">— No login linked —</option>
+            </select>
+            <div class="form-text">Link this employee to an existing login account.</div>
+        </div>
+    </div>
+
+    <div class="form-actions mt-3">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+        <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+</form>
